@@ -1,0 +1,20 @@
+###
+```
+Source: https://www.youtube.com/watch?v=DHgj5jhMJKg&list=PLjcN1EyupaQm20hlUE11y9y8EY2aXLpnv&index=1
+```
+
+### For mac 
+```
+pip install py2app
+
+Update setup.py
+
+rm -rf build dist
+python setup.py py2app
+```
+
+### For Windows
+```
+pip install pyinstaller
+pyinstaller --onefile --windowed main.py
+```
