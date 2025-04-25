@@ -18,7 +18,7 @@ class ItemBox(pygame.sprite.Sprite):
             return  # Can't function without player reference
 
         # Scroll with screen
-        self.rect.x += screen_scroll
+        self.rect.x += get_screen_scroll()
 
         # Check collision with player
         if pygame.sprite.collide_rect(self, self.player):

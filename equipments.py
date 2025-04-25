@@ -12,7 +12,7 @@ class Bullet(pygame.sprite.Sprite):
 
 	def update(self, player=None, world=None):
 		#move bullet
-		self.rect.x += (self.direction * self.speed) + screen_scroll
+		self.rect.x += (self.direction * self.speed) + get_screen_scroll()
 		#check if bullet has gone off screen
 		if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH:
 			self.kill()
@@ -75,7 +75,7 @@ class Grenade(pygame.sprite.Sprite):
 
 
 		#update grenade position
-		self.rect.x += dx + screen_scroll
+		self.rect.x += dx + get_screen_scroll()
 		self.rect.y += dy
 
 
@@ -95,7 +95,6 @@ class Grenade(pygame.sprite.Sprite):
 					abs(self.rect.centery - enemy.rect.centery) < TILE_SIZE * 2:
 					enemy.health -= 50
 
-
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, x, y, scale):
         pygame.sprite.Sprite.__init__(self)
@@ -112,7 +111,6 @@ class Explosion(pygame.sprite.Sprite):
 
     def update(self):
         # scroll
-        global screen_scroll
         self.rect.x += get_screen_scroll()
 
         EXPLOSION_SPEED = 4
