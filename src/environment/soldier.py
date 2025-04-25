@@ -1,7 +1,7 @@
 import os
 import random
-from settings import *
-from equipments import Bullet
+from src.settings import *
+from src.environment.equipments import Bullet
 
 
 class Soldier(pygame.sprite.Sprite):
@@ -75,7 +75,7 @@ class Soldier(pygame.sprite.Sprite):
 
         # jump
         if self.jump == True and self.in_air == False:
-            self.vel_y = -11
+            self.vel_y = -13
             self.jump = False
             self.in_air = True
 

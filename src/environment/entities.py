@@ -1,4 +1,4 @@
-from settings import *
+from src.settings import *
 
 class ItemBox(pygame.sprite.Sprite):
     def __init__(self, item_type, x, y, player_reference=None):

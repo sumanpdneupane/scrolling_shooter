@@ -1,6 +1,11 @@
 import pygame
-import button
+import csv
+from src.utils import button
 
+# from pygame import mixer
+#
+# mixer.init()
+# pygame.init()
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = int(SCREEN_WIDTH * 0.8)
@@ -34,17 +39,16 @@ shoot = False
 grenade = False
 grenade_thrown = False
 
-
 #load music and sounds
 pygame.mixer.music.load('src/assets/audio/music2.mp3')
 pygame.mixer.music.set_volume(0.2)
 pygame.mixer.music.play(-1, 0.0, 5000)
 jump_fx = pygame.mixer.Sound('src/assets/audio/jump.wav')
-jump_fx.set_volume(0.05)
+jump_fx.set_volume(0.25)
 shot_fx = pygame.mixer.Sound('src/assets/audio/shot.wav')
-shot_fx.set_volume(0.05)
+shot_fx.set_volume(0.3)
 grenade_fx = pygame.mixer.Sound('src/assets/audio/grenade.wav')
-grenade_fx.set_volume(0.05)
+grenade_fx.set_volume(0.4)
 
 
 #load images
@@ -132,12 +136,7 @@ def reset_level():
 	exit_group.empty()
 
 	#create empty tile list
-	data = []
-	for row in range(ROWS):
-		r = [-1] * COLS
-		data.append(r)
-
-	return data
+	return get_world_data()
 
 _screen_scroll = 0
 
@@ -148,3 +147,17 @@ def get_screen_scroll():
 def set_screen_scroll(screen_scroll):
     global _screen_scroll
     _screen_scroll = screen_scroll
+
+def get_world_data():
+	# create empty tile list
+	world_data = []
+	for row in range(ROWS):
+		r = [-1] * COLS
+		world_data.append(r)
+	# load in level data and create world
+	with open(f'src/assets/level_data/level{level}_data.csv', newline='') as csvfile:
+		reader = csv.reader(csvfile, delimiter=',')
+		for x, rows in enumerate(reader):
+			for y, tile in enumerate(rows):
+				world_data[x][y] = int(tile)
+	return world_data

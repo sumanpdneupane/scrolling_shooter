@@ -1,6 +1,6 @@
-from settings import *
-from utils import Decoration, Water, Exit, HealthBar, ItemBox
-from soldier import Soldier
+from src.settings import *
+from src.environment.entities import Decoration, Water, Exit, HealthBar, ItemBox
+from src.environment.soldier import Soldier
 
 class World():
 	def __init__(self):
@@ -45,8 +45,6 @@ class World():
 					elif tile == 20:#create exit
 						exit = Exit(img, x * TILE_SIZE, y * TILE_SIZE)
 						exit_group.add(exit)
-
-
 		return player, health_bar
 
 	def draw(self):
