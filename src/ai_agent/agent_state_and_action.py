@@ -1,6 +1,9 @@
+import enum
+
 from src.settings import *
 
-class ExtractState():
+
+class ExtractGameState():
     def extract_state(self, player, enemy_group, exit_group):
         state = {}
 
@@ -57,3 +60,12 @@ class ExtractState():
             if abs(exit.rect.centerx - player.rect.centerx) < 150:
                 return True
         return False
+
+
+class GameActions(enum.IntEnum):
+    No_action = 0
+    MoveLeft = 1
+    MoveRight = 2
+    Jump = 3
+    Shoot = 4
+    Grenade = 5
