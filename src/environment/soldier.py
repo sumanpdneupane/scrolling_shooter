@@ -195,7 +195,7 @@ class Soldier(pygame.sprite.Sprite):
             self.frame_index += 1
         # if the animation has run out the reset back to the start
         if self.frame_index >= len(self.animation_list[self.action]):
-            if self.action == 3:
+            if self.action == 3: # 3: death
                 self.frame_index = len(self.animation_list[self.action]) - 1
             else:
                 self.frame_index = 0
