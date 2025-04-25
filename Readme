@@ -3,6 +3,31 @@
 Source: https://www.youtube.com/watch?v=DHgj5jhMJKg&list=PLjcN1EyupaQm20hlUE11y9y8EY2aXLpnv&index=1
 ```
 
+```
+shooter_game/
+│── main.py                 # Main game loop
+│── settings.py             # Game constants and settings
+│── world/                  # World-related classes
+│   ├── __init__.py
+│   ├── world.py            # World class
+│   └── tile.py             # Tile-related classes
+│── entities/               # Game entities
+│   ├── __init__.py
+│   ├── player.py           # Player class
+│   ├── enemy.py            # Enemy class
+│   ├── projectile.py       # Bullets/Grenades
+│   └── items.py            # Item boxes
+│── ui/                     # User interface
+│   ├── __init__.py
+│   ├── buttons.py          # Button class
+│   ├── healthbar.py        # Health bar
+│   └── screenfade.py       # Screen transitions
+│── assets/                 # Game assets
+│   ├── images/
+│   ├── audio/
+│   └── level_data/         # Level CSV files
+```
+
 ### For mac 
 ```
 pip install py2app

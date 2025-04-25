@@ -1,4 +1,0 @@
-([('main',
-   '/Users/sumanneupane/Documents/MIT in AI/Semister 2/AI/Scrolling '
-   'Shooter/dist/main',
-   'EXECUTABLE')],)
