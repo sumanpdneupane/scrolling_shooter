@@ -39,16 +39,21 @@ shoot = False
 grenade = False
 grenade_thrown = False
 
+# Log files
+MODEL_PATH = "src/data_logs/model.pt"
+EPSILON_PATH = "src/data_logs/epsilon.txt"
+EPISODE_PATH = "src/data_logs/episode.txt"
+
 #load music and sounds
 pygame.mixer.music.load('src/assets/audio/music2.mp3')
-pygame.mixer.music.set_volume(0.2)
+pygame.mixer.music.set_volume(0.15)
 pygame.mixer.music.play(-1, 0.0, 5000)
 jump_fx = pygame.mixer.Sound('src/assets/audio/jump.wav')
-jump_fx.set_volume(0.25)
+jump_fx.set_volume(0.1)
 shot_fx = pygame.mixer.Sound('src/assets/audio/shot.wav')
-shot_fx.set_volume(0.3)
+shot_fx.set_volume(0.2)
 grenade_fx = pygame.mixer.Sound('src/assets/audio/grenade.wav')
-grenade_fx.set_volume(0.4)
+grenade_fx.set_volume(0.25)
 
 
 #load images

@@ -1,5 +1,5 @@
 import enum
-
+import numpy as np
 from src.settings import *
 
 
@@ -43,7 +43,7 @@ class ExtractGameState():
         # 9. Is player near the exit (binary)
         state["near_exit"] = int(self._check_exit_nearby(player, exit_group))
 
-        return state
+        return np.array(list(state.values()), dtype=np.float32)
 
     def _get_nearest_enemy(self, player, enemy_group):
         min_dist = float('inf')

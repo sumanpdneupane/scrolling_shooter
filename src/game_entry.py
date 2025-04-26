@@ -1,5 +1,10 @@
+import time
+
 import pygame
 from pygame import mixer
+
+from src.ai_agent.save_model_data import SaveFutureLearning
+from src.utils.logger import TrainingLogger
 
 mixer.init()
 pygame.init()
@@ -10,8 +15,7 @@ from src.environment.entities import ScreenFade
 from src.environment.equipments import Grenade
 from src.environment.world import World
 from src.ai_agent.agent_state_and_action import ExtractGameState, GameActions
-from src.ai_agent.agent import DQNAgent
-
+from src.ai_agent.agent import DQNAgent, RewardAI
 
 intro_fade = ScreenFade(1, BLACK, 4)
 death_fade = ScreenFade(2, PINK, 4)
@@ -88,7 +92,7 @@ def update_game():
     exit_group.draw(screen)
 
 def update_player_action():
-    global run, start_game, world, player, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown
+    global run, start_game, start_intro, world, player, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown
 
     # update player actions
     if player.alive:
@@ -125,16 +129,11 @@ def update_player_action():
         screen_scroll = 0
         set_screen_scroll(screen_scroll)
         bg_scroll -= get_screen_scroll()
-        if death_fade.fade():
-            if restart_button.draw(screen):
-                death_fade.fade_counter = 0
-                start_intro = True
-                bg_scroll = 0
-                world_data = reset_level()
-                world = World()
-                player, health_bar = world.process_data(world_data)
+        reset_game()
 
 def update():
+    global start_game
+
     # From here game runs
     if start_game == False:
         # Create Start Game Menu
@@ -152,40 +151,105 @@ def update():
         # update player actions
         update_player_action()
 
-def run_game():
-    global run, start_game, world, player, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro
+save_data = True
 
-    new_state = ExtractGameState()
-    dqn_agent = DQNAgent()
+def reset_game(from_agent_click= False):
+    global run, save_data, start_game, world, player, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro
+    if death_fade.fade():
+        if restart_button.draw(screen) or from_agent_click:
+            save_data = True
+            death_fade.fade_counter = 0
+            start_intro = True
+            bg_scroll = 0
+            world_data = reset_level()
+            world = World()
+            player, health_bar = world.process_data(world_data)
+
+def perform_action(action):
+    # Simulate key press actions
+    keys = {
+        GameActions.MoveLeft: pygame.K_a,
+        GameActions.MoveRight: pygame.K_d,
+        GameActions.Jump: pygame.K_w,
+        GameActions.Shoot: pygame.K_SPACE,
+        GameActions.Grenade: pygame.K_q
+    }
+    if action in keys:
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=keys[action]))
+
+def run_game():
+    global run, start_game, world, player, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro, save_data
+
+    save_manager = SaveFutureLearning(MODEL_PATH, EPSILON_PATH, EPISODE_PATH)
+    episode = save_manager.load_episode()
+    extract_state = ExtractGameState()
+    dummy_state = extract_state.extract_state(player, enemy_group, exit_group)
+    state_dim = dummy_state.shape[0]
+    action_dim = len(GameActions)
+    agent = DQNAgent(state_dim, action_dim)
+    logger = TrainingLogger()
+    reward_ai = RewardAI()
+
+    # load manager
+    save_manager.load_model(agent.q_network, agent.target_network, agent)
 
     while run:
         clock.tick(FPS)
-
-        # 1. Get current state
-        state = new_state.extract_state(player, enemy_group, exit_group)
-
-        # 2. Choose Action by AI
-        action = dqn_agent.choose_action(state)
-
-        if action != "do_nothing":
-            perform_action(action)
+        prev_health = player.health
+        reward_ai.reset_total_reward()
 
 
+        # --- Count enemies before update and Track enemies, ammo, grenades before action ---
+        prev_enemy_count = len(enemy_group)
+        prev_ammo = player.ammo
+        prev_grenades = player.grenades
 
-        # # 5. Get next state
-        # next_state = new_state.extract_state(player, enemy_group, exit_group)
-        #
-        # # 6. Calculate reward and done
-        # reward, done = calculate_reward(player, enemy_group, level_complete)
-        #
-        # # 7. Train the agent
-        # agent.remember(state, action, reward, next_state, done)
-        # agent.train_short_memory(state, action, reward, next_state, done)
-        #
-        # # 8. Reset if done
-        # if done:
-        #     level += 1
-        #     # Reset the game state (world, player, etc.)
+        state = extract_state.extract_state(player, enemy_group, exit_group)
+        action = agent.act(state)
+        perform_action(GameActions(action))
+
+        # Update Game
+        update()
+
+        # --- Count enemies after update ---
+        post_enemy_count = len(enemy_group)
+        post_ammo = player.ammo
+        post_grenades = player.grenades
+
+        # Check if an enemy was killed
+        killed_enemy = post_enemy_count < prev_enemy_count
+        fired_bullet = post_ammo < prev_ammo
+        threw_grenade = post_grenades < prev_grenades
+        bullet_hit_enemy = player.bullet_hit_enemy()
+        fell_or_hit_water = player.fell_or_hit_water()
+        reached_exit = player.reached_exit()
+        walked_forward = player.walked_forward()
+
+        next_state = extract_state.extract_state(player, enemy_group, exit_group)
+        reward = reward_ai.calculate_reward(prev_health, player.health, killed_enemy, fired_bullet, bullet_hit_enemy, threw_grenade, fell_or_hit_water, reached_exit, walked_forward)
+        done = player.health <= 0
+
+        agent.remember(state, action, reward, next_state, done)
+        agent.replay(episode)
+
+        if pygame.time.get_ticks() % 1000 < 20:
+            agent.update_target_network()
+
+        if done and save_data:
+            save_data = False
+            print(f"episode: {episode}")
+            episode += 1
+            total_reward = reward_ai.calculate_total_reward(reward)
+            logger.log(episode, total_reward, agent.epsilon)
+            # print(f"Episode {episode} ended. Total Reward: {total_reward:.2f}, Epsilon: {agent.epsilon:.3f}")
+            # Save model and epsilon after each replay step
+            save_manager.save_model(agent.q_network, agent)
+
+            # load manager
+            save_manager.load_model(agent.q_network, agent.target_network, agent)
+
+        if not save_data:
+            reset_game(True)
 
         for event in pygame.event.get():
             # quit game
@@ -220,25 +284,3 @@ def run_game():
 
         pygame.display.update()
     pygame.quit()
-
-
-def perform_action(action):
-    # Simulate key press actions
-    if action == GameActions.MoveLeft:
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_a))
-        pygame.event.post(pygame.event.Event(pygame.KEYUP, key=pygame.K_d))  # Ensure right is released
-    elif action == GameActions.MoveRight:
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_d))
-        pygame.event.post(pygame.event.Event(pygame.KEYUP, key=pygame.K_a))  # Ensure left is released
-    elif action == GameActions.Shoot:
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE))
-        pygame.event.post(pygame.event.Event(pygame.KEYUP, key=pygame.K_SPACE))  # Release immediately
-    elif action == GameActions.Grenade:
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_q))
-        pygame.event.post(pygame.event.Event(pygame.KEYUP, key=pygame.K_q))  # Release immediately
-    elif action == GameActions.Jump:
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_w))
-        pygame.event.post(pygame.event.Event(pygame.KEYUP, key=pygame.K_w))  # Release immediately
-    elif action == GameActions.No_action:
-        pass  # Do nothing, no action taken
-
