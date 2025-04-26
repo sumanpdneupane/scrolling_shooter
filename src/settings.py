@@ -43,6 +43,7 @@ grenade_thrown = False
 MODEL_PATH = "src/data_logs/model.pt"
 EPSILON_PATH = "src/data_logs/epsilon.txt"
 EPISODE_PATH = "src/data_logs/episode.txt"
+TRAINING_LOG_PATH = "src/data_logs/training_log.csv"
 
 #load music and sounds
 pygame.mixer.music.load('src/assets/audio/music2.mp3')

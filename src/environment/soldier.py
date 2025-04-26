@@ -179,9 +179,11 @@ class Soldier(pygame.sprite.Sprite):
         return reached_exit
 
     def walked_forward(self):
-         return  self.vel_x > 0
+        if self.action > -1 and self.action < 3:
+            return True
+        return False
 
-    def ai(self, player= None, world= None):
+    def ai(self, player=None, world=None):
         if self.alive and player.alive:
             if self.idling == False and random.randint(1, 200) == 1:
                 self.update_action(0)  # 0: idle
@@ -228,7 +230,7 @@ class Soldier(pygame.sprite.Sprite):
             self.frame_index += 1
         # if the animation has run out the reset back to the start
         if self.frame_index >= len(self.animation_list[self.action]):
-            if self.action == 3: # 3: death
+            if self.action == 3:  # 3: death
                 self.frame_index = len(self.animation_list[self.action]) - 1
             else:
                 self.frame_index = 0

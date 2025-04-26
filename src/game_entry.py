@@ -3,9 +3,6 @@ import time
 import pygame
 from pygame import mixer
 
-from src.ai_agent.save_model_data import SaveFutureLearning
-from src.utils.logger import TrainingLogger
-
 mixer.init()
 pygame.init()
 
@@ -16,6 +13,8 @@ from src.environment.equipments import Grenade
 from src.environment.world import World
 from src.ai_agent.agent_state_and_action import ExtractGameState, GameActions
 from src.ai_agent.agent import DQNAgent, RewardAI
+from src.ai_agent.save_model_data import SaveFutureLearning
+from src.utils.logger import TrainingLogger
 
 intro_fade = ScreenFade(1, BLACK, 4)
 death_fade = ScreenFade(2, PINK, 4)
@@ -187,70 +186,72 @@ def run_game():
     state_dim = dummy_state.shape[0]
     action_dim = len(GameActions)
     agent = DQNAgent(state_dim, action_dim)
-    logger = TrainingLogger()
     reward_ai = RewardAI()
+    reward_ai.reset_total_reward()
+    logger = TrainingLogger()
 
     # load manager
     save_manager.load_model(agent.q_network, agent.target_network, agent)
 
     while run:
         clock.tick(FPS)
-        prev_health = player.health
-        reward_ai.reset_total_reward()
 
+        done = False
+        if save_data:
+            # --- Check if any before updates  ---
+            prev_enemy_count = len(enemy_group)
+            prev_ammo = player.ammo
+            prev_grenades = player.grenades
+            prev_health = player.health
 
-        # --- Count enemies before update and Track enemies, ammo, grenades before action ---
-        prev_enemy_count = len(enemy_group)
-        prev_ammo = player.ammo
-        prev_grenades = player.grenades
+            # Old State
+            state = extract_state.extract_state(player, enemy_group, exit_group)
+            action = agent.act(state)
+            perform_action(GameActions(action))
 
-        state = extract_state.extract_state(player, enemy_group, exit_group)
-        action = agent.act(state)
-        perform_action(GameActions(action))
+            # Update Game
+            update()
 
-        # Update Game
-        update()
+            # --- Check if any after updates ---
+            post_enemy_count = len(enemy_group)
+            post_ammo = player.ammo
+            post_grenades = player.grenades
+            killed_enemy = post_enemy_count < prev_enemy_count
+            fired_bullet = post_ammo < prev_ammo
+            threw_grenade = post_grenades < prev_grenades
+            bullet_hit_enemy = player.bullet_hit_enemy()
+            fell_or_hit_water = player.fell_or_hit_water()
+            reached_exit = player.reached_exit()
+            walked_forward = player.walked_forward()
 
-        # --- Count enemies after update ---
-        post_enemy_count = len(enemy_group)
-        post_ammo = player.ammo
-        post_grenades = player.grenades
+            # New State
+            next_state = extract_state.extract_state(player, enemy_group, exit_group)
+            reward = reward_ai.calculate_reward(prev_health, player.health, killed_enemy, fired_bullet, bullet_hit_enemy, threw_grenade, fell_or_hit_water, reached_exit, walked_forward)
+            print(f"reward: {reward}, total_reward:{reward_ai.calculate_total_reward()}, walked_forward: {walked_forward}")
+            done = player.health <= 0
 
-        # Check if an enemy was killed
-        killed_enemy = post_enemy_count < prev_enemy_count
-        fired_bullet = post_ammo < prev_ammo
-        threw_grenade = post_grenades < prev_grenades
-        bullet_hit_enemy = player.bullet_hit_enemy()
-        fell_or_hit_water = player.fell_or_hit_water()
-        reached_exit = player.reached_exit()
-        walked_forward = player.walked_forward()
+            # Rember
+            agent.remember(state, action, reward, next_state, done)
+            agent.replay(episode)
+            if pygame.time.get_ticks() % 1000 < 20:
+                agent.update_target_network()
 
-        next_state = extract_state.extract_state(player, enemy_group, exit_group)
-        reward = reward_ai.calculate_reward(prev_health, player.health, killed_enemy, fired_bullet, bullet_hit_enemy, threw_grenade, fell_or_hit_water, reached_exit, walked_forward)
-        done = player.health <= 0
-
-        agent.remember(state, action, reward, next_state, done)
-        agent.replay(episode)
-
-        if pygame.time.get_ticks() % 1000 < 20:
-            agent.update_target_network()
-
+        # Logging
         if done and save_data:
-            save_data = False
-            print(f"episode: {episode}")
-            episode += 1
-            total_reward = reward_ai.calculate_total_reward(reward)
+            total_reward = reward_ai.calculate_total_reward()
             logger.log(episode, total_reward, agent.epsilon)
-            # print(f"Episode {episode} ended. Total Reward: {total_reward:.2f}, Epsilon: {agent.epsilon:.3f}")
-            # Save model and epsilon after each replay step
             save_manager.save_model(agent.q_network, agent)
-
-            # load manager
             save_manager.load_model(agent.q_network, agent.target_network, agent)
 
+            print(f"episode: {episode}")
+            episode += 1
+            save_data = False
+            reward_ai.reset_total_reward()
+            # print(f"Episode {episode} ended. Total Reward: {total_reward:.2f}, Epsilon: {agent.epsilon:.3f}")
         if not save_data:
             reset_game(True)
 
+        # Event Handling
         for event in pygame.event.get():
             # quit game
             if event.type == pygame.QUIT:

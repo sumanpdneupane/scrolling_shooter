@@ -1,9 +1,10 @@
 import os
-import csv
+
+from src.settings import *
 
 # ----------------------------- LOGGER ----------------------------- #
 class TrainingLogger:
-    def __init__(self, filename="training_log.csv"):
+    def __init__(self, filename= TRAINING_LOG_PATH):
         self.filename = filename
         if not os.path.exists(self.filename):
             with open(self.filename, mode='w', newline='') as f:

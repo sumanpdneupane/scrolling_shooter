@@ -95,8 +95,8 @@ class RewardAI:
     def calculate_reward(self, prev_health, current_health, killed_enemy=False, fired_bullet=False, bullet_hit_enemy= False, threw_grenade= False, fell_or_hit_water= False, reached_exit= False, walked_forward= False):
         reward = 0.0
 
-        # Always give time penalty
-        reward -= 0.01
+        # # Always give time penalty
+        # reward -= 0.0001
 
         # Penalty for falling into water or off the ground
         if fell_or_hit_water:
@@ -112,23 +112,23 @@ class RewardAI:
         if killed_enemy:
             reward += 2.0
         if fired_bullet:
-            reward += 0.2
+            reward += 0.02
         if bullet_hit_enemy:
             reward += 1.0
         if threw_grenade:
-            reward += 0.3
+            reward += 0.03
         if walked_forward:
-            reward += 0.05
+            reward += 0.005
 
         # HIGH reward for reaching the exit
         if reached_exit:
             reward += 5.0
 
+        self.total_reward += reward
         return reward
 
     def reset_total_reward(self):
         self.total_reward = 0
 
-    def calculate_total_reward(self, reward):
-        self.total_reward += reward
+    def calculate_total_reward(self):
         return self.total_reward
