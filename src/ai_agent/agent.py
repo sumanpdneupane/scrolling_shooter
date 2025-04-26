@@ -11,13 +11,25 @@ class QNetwork(nn.Module):
         super(QNetwork, self).__init__()
         self.fc1 = nn.Linear(input_dim, 128)
         self.fc2 = nn.Linear(128, 128) # Hidden layer
-        # self.fc3 = nn.Linear(128, 128)  # Hidden layer
+        self.fc3 = nn.Linear(128, 128)  # Hidden layer
+        self.fc4 = nn.Linear(128, 128)  # Hidden layer
+        self.fc5 = nn.Linear(128, 128)  # Hidden layer
         self.out = nn.Linear(128, output_dim)  # Output layer (action space)
+
+        # Weight Initialization (Xavier Initialization)
+        nn.init.xavier_uniform_(self.fc1.weight)
+        nn.init.xavier_uniform_(self.fc2.weight)
+        nn.init.xavier_uniform_(self.fc3.weight)
+        nn.init.xavier_uniform_(self.fc4.weight)
+        nn.init.xavier_uniform_(self.fc5.weight)
+        nn.init.xavier_uniform_(self.out.weight)
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))  # ReLU activation for the first hidden layer
         x = torch.relu(self.fc2(x))  # ReLU activation for the second hidden layer
-        # x = torch.relu(self.fc3(x))  # ReLU activation for the second hidden layer
+        x = torch.relu(self.fc3(x))  # ReLU activation for the second hidden layer
+        x = torch.relu(self.fc4(x))  # ReLU activation for the second hidden layer
+        x = torch.relu(self.fc5(x))  # ReLU activation for the second hidden layer
         return self.out(x)  # Final output (Q-values)
 
 
@@ -32,6 +44,7 @@ class DQNAgent:
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.01
         self.learning_rate = 0.001
+        # self.learning_rate = 0.0005
 
         self.q_network = QNetwork(state_dim, action_dim)
         self.target_network = QNetwork(state_dim, action_dim)
@@ -80,7 +93,8 @@ class DQNAgent:
             next_q_values = self.target_network(next_states).max(1)[0]
         targets = rewards + self.gamma * next_q_values * (1 - dones)
 
-        loss = nn.MSELoss()(q_values, targets)
+        # loss = nn.MSELoss()(q_values, targets)
+        loss = nn.SmoothL1Loss()(q_values, targets)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -95,8 +109,8 @@ class RewardAI:
     def calculate_reward(self, prev_health, current_health, killed_enemy=False, fired_bullet=False, bullet_hit_enemy= False, threw_grenade= False, fell_or_hit_water= False, reached_exit= False, walked_forward= False):
         reward = 0.0
 
-        # # Always give time penalty
-        # reward -= 0.0001
+        # Always give time penalty
+        reward -= 0.001
 
         # Penalty for falling into water or off the ground
         if fell_or_hit_water:
@@ -112,13 +126,13 @@ class RewardAI:
         if killed_enemy:
             reward += 2.0
         if fired_bullet:
-            reward += 0.02
+            reward += 0.6
         if bullet_hit_enemy:
             reward += 1.0
         if threw_grenade:
-            reward += 0.03
+            reward += 0.9
         if walked_forward:
-            reward += 0.005
+            reward += 0.05
 
         # HIGH reward for reaching the exit
         if reached_exit:

@@ -82,6 +82,7 @@ def update_game():
     decoration_group.update()
     water_group.update()
     exit_group.update()
+
     bullet_group.draw(screen)
     grenade_group.draw(screen)
     explosion_group.draw(screen)
@@ -182,7 +183,7 @@ def run_game():
     save_manager = SaveFutureLearning(MODEL_PATH, EPSILON_PATH, EPISODE_PATH)
     episode = save_manager.load_episode()
     extract_state = ExtractGameState()
-    dummy_state = extract_state.extract_state(player, enemy_group, exit_group)
+    dummy_state = extract_state.extract_state(player, world, enemy_group, exit_group)
     state_dim = dummy_state.shape[0]
     action_dim = len(GameActions)
     agent = DQNAgent(state_dim, action_dim)
@@ -205,7 +206,7 @@ def run_game():
             prev_health = player.health
 
             # Old State
-            state = extract_state.extract_state(player, enemy_group, exit_group)
+            state = extract_state.extract_state(player, world, enemy_group, exit_group)
             action = agent.act(state)
             perform_action(GameActions(action))
 
@@ -225,9 +226,9 @@ def run_game():
             walked_forward = player.walked_forward()
 
             # New State
-            next_state = extract_state.extract_state(player, enemy_group, exit_group)
+            next_state = extract_state.extract_state(player, world, enemy_group, exit_group)
             reward = reward_ai.calculate_reward(prev_health, player.health, killed_enemy, fired_bullet, bullet_hit_enemy, threw_grenade, fell_or_hit_water, reached_exit, walked_forward)
-            print(f"reward: {reward}, total_reward:{reward_ai.calculate_total_reward()}, walked_forward: {walked_forward}")
+            print(f"reward: {reward}, total_reward:{reward_ai.calculate_total_reward()}")
             done = player.health <= 0
 
             # Rember
