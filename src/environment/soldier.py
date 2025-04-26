@@ -1,5 +1,7 @@
 import os
 import random
+
+# from src.environment.world import World
 from src.settings import *
 from src.environment.equipments import Bullet
 
@@ -18,6 +20,7 @@ class Soldier(pygame.sprite.Sprite):
         self.max_health = self.health
         self.direction = 1
         self.vel_y = 0
+        self.vel_x = 0
         self.jump = False
         self.in_air = True
         self.flip = False
@@ -49,6 +52,7 @@ class Soldier(pygame.sprite.Sprite):
         self.rect.center = (x, y)
         self.width = self.image.get_width()
         self.height = self.image.get_height()
+        self.last_x = self.rect.x
 
     def update(self):
         self.update_animation()
@@ -57,7 +61,7 @@ class Soldier(pygame.sprite.Sprite):
         if self.shoot_cooldown > 0:
             self.shoot_cooldown -= 1
 
-    def move(self, moving_left, moving_right, world: None):
+    def move(self, moving_left, moving_right, world):
         # reset movement variables
         screen_scroll = 0
         dx = 0
@@ -65,23 +69,23 @@ class Soldier(pygame.sprite.Sprite):
 
         # assign movement variables if moving left or right
         if moving_left:
-            dx = -self.speed
+            dx = -self.speed - 1.8
             self.flip = True
             self.direction = -1
         if moving_right:
-            dx = self.speed
+            dx = self.speed + 1.8
             self.flip = False
             self.direction = 1
 
         # jump
         if self.jump == True and self.in_air == False:
-            self.vel_y = -13
+            self.vel_y = -11.5 #14
             self.jump = False
             self.in_air = True
 
         # apply gravity
         self.vel_y += GRAVITY
-        if self.vel_y > 10:
+        if self.vel_y > 7: #10
             self.vel_y
         dy += self.vel_y
 
@@ -136,6 +140,10 @@ class Soldier(pygame.sprite.Sprite):
                 self.rect.x -= dx
                 screen_scroll = -dx
 
+        # After updating player position
+        self.vel_x = self.rect.x - self.last_x
+        self.last_x = self.rect.x
+
         return screen_scroll, level_complete
 
     def shoot(self):
@@ -148,7 +156,36 @@ class Soldier(pygame.sprite.Sprite):
             self.ammo -= 1
             shot_fx.play()
 
-    def ai(self, player= None, world= None):
+    def bullet_hit_enemy(self):
+        # Assume bullet_group and enemy_group are defined
+        hits = pygame.sprite.groupcollide(enemy_group, bullet_group, False, True)
+        if hits:
+            bullet_hit_enemy = True
+        else:
+            bullet_hit_enemy = False
+        return bullet_hit_enemy
+
+    def fell_or_hit_water(self):
+        if pygame.sprite.spritecollide(self, water_group, False):
+            return True
+        if self.rect.top > SCREEN_HEIGHT:
+            return True
+        return False
+
+    def reached_exit(self):
+        reached_exit = False
+        for exit in exit_group:
+            if self.rect.colliderect(exit.rect):
+                reached_exit = True
+                break
+        return reached_exit
+
+    def walked_forward(self):
+        if self.action > -1 and self.action < 3:
+            return True
+        return False
+
+    def ai(self, player=None, world=None):
         if self.alive and player.alive:
             if self.idling == False and random.randint(1, 200) == 1:
                 self.update_action(0)  # 0: idle
@@ -195,7 +232,7 @@ class Soldier(pygame.sprite.Sprite):
             self.frame_index += 1
         # if the animation has run out the reset back to the start
         if self.frame_index >= len(self.animation_list[self.action]):
-            if self.action == 3:
+            if self.action == 3:  # 3: death
                 self.frame_index = len(self.animation_list[self.action]) - 1
             else:
                 self.frame_index = 0

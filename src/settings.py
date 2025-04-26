@@ -25,6 +25,7 @@ COLS = 150
 TILE_SIZE = SCREEN_HEIGHT // ROWS
 TILE_TYPES = 21
 MAX_LEVELS = 3
+GROUND_THRESHOLD = TILE_SIZE * 1.4
 screen_scroll = 0
 bg_scroll = 0
 level = 1
@@ -39,16 +40,22 @@ shoot = False
 grenade = False
 grenade_thrown = False
 
+# Log files
+MODEL_PATH = "src/data_logs/model.pt"
+EPSILON_PATH = "src/data_logs/epsilon.txt"
+EPISODE_PATH = "src/data_logs/episode.txt"
+TRAINING_LOG_PATH = "src/data_logs/training_log.csv"
+
 #load music and sounds
 pygame.mixer.music.load('src/assets/audio/music2.mp3')
-pygame.mixer.music.set_volume(0.2)
+pygame.mixer.music.set_volume(0.00)
 pygame.mixer.music.play(-1, 0.0, 5000)
 jump_fx = pygame.mixer.Sound('src/assets/audio/jump.wav')
-jump_fx.set_volume(0.25)
+jump_fx.set_volume(0.00)
 shot_fx = pygame.mixer.Sound('src/assets/audio/shot.wav')
-shot_fx.set_volume(0.3)
+shot_fx.set_volume(0.00)
 grenade_fx = pygame.mixer.Sound('src/assets/audio/grenade.wav')
-grenade_fx.set_volume(0.4)
+grenade_fx.set_volume(0.00)
 
 
 #load images
