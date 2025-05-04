@@ -152,9 +152,16 @@ def update():
         update_player_action()
 
 save_data = True
+done = False
+game_start_time = time.time()
+def timer():
+    global game_start_time, done
+    current_time = time.time()
+    if current_time - game_start_time > 30:
+        done = True
 
 def reset_game(from_agent_click= False):
-    global run, save_data, start_game, world, player, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro
+    global run, done, save_data, start_game, world, player, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro
     if death_fade.fade():
         if restart_button.draw(screen) or from_agent_click:
             save_data = True
@@ -164,18 +171,46 @@ def reset_game(from_agent_click= False):
             world_data = reset_level()
             world = World()
             player, health_bar = world.process_data(world_data)
+    done = False
+
 
 def perform_action(action):
-    # Simulate key press actions
-    keys = {
-        GameActions.MoveLeft: pygame.K_a,
-        GameActions.MoveRight: pygame.K_d,
-        GameActions.Jump: pygame.K_w,
-        GameActions.Shoot: pygame.K_SPACE,
-        GameActions.Grenade: pygame.K_q
-    }
-    if action in keys:
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=keys[action]))
+    global moving_left, moving_right, shoot, grenade, grenade_thrown
+
+    # Only reset relevant flags per action
+    if action in (GameActions.MoveLeft, GameActions.MoveRight):
+        moving_left = (action == GameActions.MoveLeft)
+        moving_right = (action == GameActions.MoveRight)
+    else:
+        moving_left = False
+        moving_right = False
+
+    # Handle other actions
+    shoot = (action == GameActions.Shoot)
+
+    if action == GameActions.Jump:
+        if player.alive and not player.in_air:
+            player.jump = True
+            jump_fx.play()  # Add sound feedback
+
+    if action == GameActions.Grenade:
+        if not grenade_thrown and player.grenades > 0:
+            grenade = True
+            grenade_thrown = True  # Prevent multi-throw
+            player.grenades -= 1
+
+# def perform_action(action):
+#     # Simulate key press actions
+#     keys = {
+#         GameActions.MoveLeft: pygame.K_a,
+#         GameActions.MoveRight: pygame.K_d,
+#         GameActions.Jump: pygame.K_w,
+#         GameActions.Shoot: pygame.K_SPACE,
+#         GameActions.Grenade: pygame.K_q
+#     }
+#     if action in keys:
+#         pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=keys[action]))
+
 
 def run_game():
     global run, start_game, world, player, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro, save_data
@@ -193,62 +228,90 @@ def run_game():
 
     # load manager
     save_manager.load_model(agent.q_network, agent.target_network, agent)
-
+    agent.update_target_network()  # Sync target network with Q-network
+    iteration = 0
     while run:
         clock.tick(FPS)
-
-        done = False
         if save_data:
-            # --- Check if any before updates  ---
             prev_enemy_count = len(enemy_group)
             prev_ammo = player.ammo
             prev_grenades = player.grenades
-            prev_health = player.health
+            player.prev_health = player.health
+
+            # Reset temporary counters BEFORE action
+            player.bullets_hit_this_frame = 0
+            player.moved_forward = False
 
             # Old State
             state = extract_state.extract_state(player, world, enemy_group, exit_group)
-            action = agent.act(state)
-            perform_action(GameActions(action))
+            action_type, rand_values, chosen_action = agent.act(state, episode)
+            perform_action(GameActions(chosen_action))
 
-            # Update Game
+            # Update Game - this will modify the state
             update()
 
-            # --- Check if any after updates ---
-            post_enemy_count = len(enemy_group)
-            post_ammo = player.ammo
-            post_grenades = player.grenades
-            killed_enemy = post_enemy_count < prev_enemy_count
-            fired_bullet = post_ammo < prev_ammo
-            threw_grenade = post_grenades < prev_grenades
-            bullet_hit_enemy = player.bullet_hit_enemy()
+            # --- Check post-update values AFTER game updates ---
+            # Get actual results from the frame's simulation
+            bullet_hit_enemy = player.bullets_hit_this_frame > 0
             fell_or_hit_water = player.fell_or_hit_water()
             reached_exit = player.reached_exit()
             walked_forward = player.walked_forward()
 
+            # Calculate derived values
+            killed_enemy = len(enemy_group) < prev_enemy_count
+            fired_bullet = player.ammo < prev_ammo
+            threw_grenade = player.grenades < prev_grenades
+
             # New State
             next_state = extract_state.extract_state(player, world, enemy_group, exit_group)
-            reward = reward_ai.calculate_reward(prev_health, player.health, killed_enemy, fired_bullet, bullet_hit_enemy, threw_grenade, fell_or_hit_water, reached_exit, walked_forward)
-            print(f"reward: {reward}, total_reward:{reward_ai.calculate_total_reward()}")
-            done = player.health <= 0
+
+            # Calculate reward with PROPER CAUSALITY
+            reward = reward_ai.calculate_reward(
+                prev_health=player.prev_health,
+                current_health=player.health,
+                killed_enemy=killed_enemy,
+                fired_bullet=fired_bullet,
+                bullet_hit_enemy=bullet_hit_enemy,
+                threw_grenade=threw_grenade,
+                fell_or_hit_water=fell_or_hit_water,
+                reached_exit=reached_exit,
+                walked_forward=walked_forward
+            )
+
+            # Terminal state checks
+            done = not player.alive or reached_exit
+
+            print(f"Iteration: {iteration}, Type: {action_type}, Epsilon: {agent.epsilon:.4f}, Random: {rand_values}, "
+                  f"Action: {GameActions(chosen_action).name}, Reward: {reward:.2f}, "
+                  f"Total: {reward_ai.total_reward:.2f}, Health: {player.health}")
+
+            # Add to reward calculation
+            if DEBUG:
+                pygame.draw.line(screen, RED, player.rect.center,
+                                 (player.rect.centerx + 50 * player.direction,
+                                  player.rect.centery), 3)
 
             # Rember
-            agent.remember(state, action, reward, next_state, done)
-            agent.replay(episode)
-            if pygame.time.get_ticks() % 1000 < 20:
+            agent.remember(state, chosen_action, reward, next_state, done)
+            agent.replay()
+            if iteration % 1000 == 0:
                 agent.update_target_network()
+            iteration += 1
 
         # Logging
         if done and save_data:
             total_reward = reward_ai.calculate_total_reward()
             logger.log(episode, total_reward, agent.epsilon)
-            save_manager.save_model(agent.q_network, agent)
+            save_manager.save_model(agent.q_network, agent, episode)
             save_manager.load_model(agent.q_network, agent.target_network, agent)
+            # if agent.epsilon > agent.epsilon_min:
+            #     agent.epsilon *= agent.epsilon_decay
 
             print(f"episode: {episode}")
             episode += 1
+            iteration = 0
             save_data = False
             reward_ai.reset_total_reward()
-            # print(f"Episode {episode} ended. Total Reward: {total_reward:.2f}, Epsilon: {agent.epsilon:.3f}")
         if not save_data:
             reset_game(True)
 
@@ -257,6 +320,8 @@ def run_game():
             # quit game
             if event.type == pygame.QUIT:
                 run = False
+            # Only process input if the agent is not controlling
+            # if not save_data:
             # keyboard presses
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_a:

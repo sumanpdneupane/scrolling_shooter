@@ -1,5 +1,6 @@
 import os
 import random
+from collections import deque
 
 # from src.environment.world import World
 from src.settings import *
@@ -33,6 +34,12 @@ class Soldier(pygame.sprite.Sprite):
         self.vision = pygame.Rect(0, 0, 150, 20)
         self.idling = False
         self.idling_counter = 0
+        self.prev_x = x  # Track previous position
+        self.moved_forward = False
+        self.bullets_hit_this_frame = 0  # Track successful hits
+        # Add health tracking
+        self.prev_health = 100  # Initialize with max health
+        self.velocity_history = deque(maxlen=10)  # Track last 10 frames
 
         # load all images for the players
         animation_types = ['Idle', 'Run', 'Jump', 'Death']
@@ -60,6 +67,8 @@ class Soldier(pygame.sprite.Sprite):
         # update cooldown
         if self.shoot_cooldown > 0:
             self.shoot_cooldown -= 1
+        # Store health state before updates
+        self.prev_health = self.health
 
     def move(self, moving_left, moving_right, world):
         # reset movement variables
@@ -79,13 +88,13 @@ class Soldier(pygame.sprite.Sprite):
 
         # jump
         if self.jump == True and self.in_air == False:
-            self.vel_y = -11.5 #14
+            self.vel_y = -12.25 #14
             self.jump = False
             self.in_air = True
 
         # apply gravity
         self.vel_y += GRAVITY
-        if self.vel_y > 7: #10
+        if self.vel_y > 10:
             self.vel_y
         dy += self.vel_y
 
@@ -144,6 +153,12 @@ class Soldier(pygame.sprite.Sprite):
         self.vel_x = self.rect.x - self.last_x
         self.last_x = self.rect.x
 
+        # Update movement tracking
+        if self.char_type == 'player':
+            self.moved_forward = (self.rect.x > self.prev_x and self.direction == 1) or \
+                                 (self.rect.x < self.prev_x and self.direction == -1)
+        self.prev_x = self.rect.x
+
         return screen_scroll, level_complete
 
     def shoot(self):
@@ -157,40 +172,33 @@ class Soldier(pygame.sprite.Sprite):
             shot_fx.play()
 
     def bullet_hit_enemy(self):
-        # Assume bullet_group and enemy_group are defined
-        hits = pygame.sprite.groupcollide(enemy_group, bullet_group, False, True)
-        if hits:
-            bullet_hit_enemy = True
-        else:
-            bullet_hit_enemy = False
-        return bullet_hit_enemy
+        self.bullets_hit_this_frame = 0  # Reset counter
+        # Check for new collisions
+        for enemy in enemy_group:
+            if pygame.sprite.spritecollide(enemy, bullet_group, True):
+                self.bullets_hit_this_frame += 1
+        return self.bullets_hit_this_frame > 0
 
     def fell_or_hit_water(self):
-        if pygame.sprite.spritecollide(self, water_group, False):
-            return True
-        if self.rect.top > SCREEN_HEIGHT:
-            return True
-        return False
+        in_water = pygame.sprite.spritecollide(self, water_group, False)
+        fell_off = self.rect.bottom > SCREEN_HEIGHT
+        return in_water or fell_off
 
     def reached_exit(self):
-        reached_exit = False
-        for exit in exit_group:
-            if self.rect.colliderect(exit.rect):
-                reached_exit = True
-                break
-        return reached_exit
+        return any(self.rect.colliderect(exit.rect) for exit in exit_group)
+
 
     def walked_forward(self):
-        if self.action > -1 and self.action < 3:
-            return True
-        return False
+        return self.moved_forward  # Use the tracked movement state
 
     def ai(self, player=None, world=None):
+        # Add movement tracking for NPCs
+        self.prev_x = self.rect.x  # Store position before moving
         if self.alive and player.alive:
-            if self.idling == False and random.randint(1, 200) == 1:
+            if self.idling == False and random.randint(1, 500) == 1:
                 self.update_action(0)  # 0: idle
                 self.idling = True
-                self.idling_counter = 50
+                self.idling_counter = 100
             # check if the ai in near the player
             if self.vision.colliderect(player.rect):
                 # stop running and face the player
@@ -208,7 +216,7 @@ class Soldier(pygame.sprite.Sprite):
                     self.update_action(1)  # 1: run
                     self.move_counter += 1
                     # update ai vision as the enemy moves
-                    self.vision.center = (self.rect.centerx + 75 * self.direction, self.rect.centery)
+                    self.vision.center = (self.rect.centerx + 95 * self.direction, self.rect.centery)
 
                     if self.move_counter > TILE_SIZE:
                         self.direction *= -1
@@ -220,6 +228,11 @@ class Soldier(pygame.sprite.Sprite):
 
         # scroll
         self.rect.x += get_screen_scroll()
+
+        # # After movement:
+        # if self.rect.x != self.prev_x:
+        #     self.moved_forward = (self.rect.x > self.prev_x and self.direction == 1) or \
+        #                          (self.rect.x < self.prev_x and self.direction == -1)
 
     def update_animation(self):
         # update animation

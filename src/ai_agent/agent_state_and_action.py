@@ -39,8 +39,21 @@ class ExtractGameState():
             state["nearest_enemy_dx"] = dx
             state["nearest_enemy_dy"] = dy
         else:
-            state["nearest_enemy_dx"] = 1.0  # no enemy nearby
-            state["nearest_enemy_dy"] = 1.0
+            # Use neutral values when no enemies exist
+            state["nearest_enemy_dx"] = 0.0
+            state["nearest_enemy_dy"] = 0.0
+
+        # 8. Distance to exit (normalized)
+        if exit_group:  # Check if there are any exits
+            # Find nearest exit (assuming there's only one exit in the group)
+            exit = exit_group.sprites()[0] if exit_group else None
+            exit_dx = (exit.rect.centerx - player.rect.centerx) / SCREEN_WIDTH
+            exit_dy = (exit.rect.centery - player.rect.centery) / SCREEN_HEIGHT
+        else:
+            exit_dx = 0.0
+            exit_dy = 0.0
+        state["exit_distance_x"] = exit_dx
+        state["exit_distance_y"] = exit_dy
 
         # 2. nearest_enemy_health
         nearest_enemy_health = 100

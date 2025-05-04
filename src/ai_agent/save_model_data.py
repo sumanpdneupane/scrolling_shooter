@@ -8,7 +8,7 @@ class SaveFutureLearning:
         self.epsilon_path = epsilon_path
         self.episode_path = episode_path
 
-    def save_model(self, model, agent):
+    def save_model(self, model, agent, episode):
         # Save model weights
         torch.save(model.state_dict(), self.model_path)
 
@@ -18,7 +18,7 @@ class SaveFutureLearning:
 
         # Save episode number
         with open(self.episode_path, "w") as f:
-            f.write(str(agent.episode))
+            f.write(str(episode))
 
     def load_model(self, q_network, target_network, agent):
         # Load the Q-network model from the model path, Load model weights if exists
