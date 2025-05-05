@@ -1,156 +1,246 @@
-import numpy as np
+from src.ai_agent.agent_state_and_action import GameActions
+
+# class RewardAI:
+#     def __init__(self):
+#         self.total_reward = 0
+#         self.previous_x_position = None
+#         self.previous_exit_distance = None
+#         self.step_count = 0
+#         self.last_health = 100
+#         self.consecutive_jumps = 0
+#         self.jump_cooldown = 0
+#
+#     def calculate_reward(self, state_dict, state, action, died):
+#         self.step_count += 1
+#         reward = 0
+#
+#         current_x = state_dict["player_tile_x"]
+#         current_y = state_dict["player_tile_y"]
+#         exit_tile_x = state_dict["exit_tile_x"]
+#         exit_tile_y = state_dict["exit_tile_y"]
+#         current_health = state_dict["health"] * 100
+#
+#         current_distance = ((current_x - exit_tile_x) ** 2 + (current_y - exit_tile_y) ** 2) ** 0.5
+#         correct_direction = 1 if exit_tile_x > current_x else 0
+#
+#         # === MAJOR REWARDS/PENALTIES ===
+#         if died:
+#             reward -= 100
+#             print("DIED! Penalty: -100")
+#
+#         if state_dict["near_exit"]:
+#             reward += 100
+#             print("NEAR EXIT! Reward: +100")
+#
+#         if self.last_health is not None:
+#             health_change = current_health - self.last_health
+#             if health_change < 0:
+#                 reward += health_change * 5
+#                 print(f"HEALTH LOSS: {health_change}, Penalty: {health_change * 5}")
+#
+#         if action == GameActions.SHOOT:
+#             reward += 2
+#         if action == GameActions.GRENADE:
+#             reward += 3
+#
+#
+#         # === MOVEMENT REWARDS ===
+#         if action == GameActions.MOVE_RIGHT:
+#             reward += 30  # Reduced from 50
+#             if state_dict.get("on_ground", True):
+#                 reward += 10
+#                 print("GROUND MOVEMENT RIGHT! Bonus: +10")
+#             print("MOVING RIGHT! Reward: +30")
+#         elif action == GameActions.MOVE_LEFT:
+#             reward += 3  # Reduced from 5
+#             if state_dict.get("on_ground", True):
+#                 reward += 2
+#                 print("GROUND MOVEMENT LEFT! Bonus: +2")
+#             print("MOVING LEFT! Reward: +3")
+#
+#         if action == correct_direction:
+#             reward += 30
+#             print("CORRECT DIRECTION towards exit! Bonus: +30")
+#
+#         if self.previous_exit_distance is not None:
+#             distance_change = self.previous_exit_distance - current_distance
+#             if distance_change > 0:
+#                 progress_reward = distance_change * 10
+#                 reward += progress_reward
+#                 print(f"PROGRESS TOWARDS EXIT: {distance_change:.2f}, Reward: +{progress_reward:.2f}")
+#             else:
+#                 penalty = distance_change * 5
+#                 reward += penalty
+#                 print(f"MOVED AWAY FROM EXIT: {distance_change:.2f}, Penalty: {penalty:.2f}")
+#
+#         # === SITUATIONAL REWARDS ===
+#         if state_dict["water_ahead"] or state_dict["water_below"]:
+#             if action == GameActions.JUMP:
+#                 reward += 5
+#                 print("GOOD JUMP over water! Reward: +5")
+#             else:
+#                 reward -= 3
+#                 print("FAILED TO JUMP over water! Penalty: -3")
+#
+#         if state_dict["space_ahead"]:
+#             if action == GameActions.JUMP:
+#                 reward += 5
+#                 print("GOOD JUMP over gap! Reward: +5")
+#             else:
+#                 reward -= 3
+#                 print("FAILED TO JUMP over gap! Penalty: -3")
+#
+#         if not state_dict["path_clear"]:
+#             if action == GameActions.JUMP:
+#                 reward += 5
+#                 print("GOOD JUMP over obstacle! Reward: +5")
+#             else:
+#                 reward -= 3
+#                 print("FAILED TO JUMP over obstacle! Penalty: -3")
+#
+#         # === ENHANCED JUMP CONTROL ===
+#         ON_GROUND = state_dict.get("on_ground", True)
+#         AIRBORNE = not ON_GROUND
+#
+#         # Track consecutive jumps
+#         if action == GameActions.JUMP:
+#             self.consecutive_jumps += 1
+#         else:
+#             self.consecutive_jumps = 0
+#
+#         # Penalty for unnecessary jump
+#         jump_penalty = 0
+#         if action == GameActions.JUMP and state_dict["path_clear"] and not state_dict["water_ahead"] and not state_dict["space_ahead"] and ON_GROUND:
+#             jump_penalty = -5
+#
+#         if jump_penalty < 0 and self.consecutive_jumps > 1:
+#             jump_penalty *= (1 + self.consecutive_jumps * 0.5)
+#             print(f"CONSECUTIVE UNNECESSARY JUMPS ({self.consecutive_jumps}): Penalty {jump_penalty:.2f}")
+#
+#         if action == GameActions.JUMP and AIRBORNE:
+#             reward -= 4
+#             print("MID-AIR JUMP! Penalty: -4")
+#
+#         reward += jump_penalty
+#
+#         # Reward for staying grounded
+#         if ON_GROUND and action != GameActions.JUMP and not state_dict["water_ahead"] and not state_dict["space_ahead"]:
+#             reward += 2
+#
+#         # Cooldown mechanism for jump spam
+#         if action == GameActions.JUMP:
+#             if self.jump_cooldown > 0:
+#                 cooldown_penalty = 3 * self.jump_cooldown
+#                 reward -= cooldown_penalty
+#                 print(f"JUMP SPAM! Cooldown penalty: -{cooldown_penalty}")
+#             self.jump_cooldown = 3
+#         else:
+#             self.jump_cooldown = max(0, self.jump_cooldown - 1)
+#
+#         # === OTHER PENALTIES ===
+#         if action == GameActions.STOP:
+#             reward -= 5
+#             print("STOPPED! Penalty: -5")
+#
+#         reward -= 0.2  # Time penalty
+#
+#         if self.step_count % 100 == 0:
+#             reward += 1  # Exploration bonus
+#
+#         # === STATE UPDATES ===
+#         self.previous_x_position = current_x
+#         self.previous_exit_distance = current_distance
+#         self.last_health = current_health
+#
+#         print(f"Action: {action}, Final Reward: {reward:.2f}")
+#         self.total_reward += reward
+#         return reward
+#
+#     def calculate_total_reward(self):
+#         return self.total_reward
+#
+#     def reset_total_reward(self):
+#         self.total_reward = 0
+#         self.previous_x_position = None
+#         self.previous_exit_distance = None
+#         self.step_count = 0
+#         self.last_health = 100
+#         self.consecutive_jumps = 0
+#         self.jump_cooldown = 0
+
+
 from src.ai_agent.agent_state_and_action import GameActions
 
 class RewardAI:
     def __init__(self):
         self.total_reward = 0
         self.previous_exit_distance = None
+        self.jump_cooldown = 0
 
     def calculate_reward(self, state_dict, state, action, died):
         reward = 0
 
-        reward += self._movement_reward(state_dict, action)
-        reward += self._exit_reward(state_dict)
-        reward += 0.005  # small exploration bonus
+        current_x = state_dict["player_tile_x"]
+        current_y = state_dict["player_tile_y"]
+        exit_x = state_dict["exit_tile_x"]
+        exit_y = state_dict["exit_tile_y"]
+
+        # --- Major reward/penalty ---
         if died:
-            reward = -1000  # large negative reward for death
+            return -100  # Instant penalty
 
-        # reward = np.clip(reward, -1.0, 1.0)
+        jump_conditions = (
+                state_dict["water_ahead"] or
+                state_dict["water_below"] or
+                state_dict["space_ahead"] or
+                state_dict["on_edge"] or
+                not state_dict["path_clear"]
+        )
 
-        print(f"Action: {action}, Reward: {reward:.4f}, "
-              f"GroundDist: {state_dict['ground_distance']:.2f}, InWater: {state_dict['in_water']}, "
-              f"PathClear: {state_dict['path_clear']}, WaterAhead: {state_dict['water_ahead']}, "
-              f"WaterBelow: {state_dict['water_below']}, SpaceAhead: {state_dict['space_ahead']}, "
-              f"LeftHit: {state_dict['tile_left_hit']}, RightHit: {state_dict['tile_right_hit']}, "
-              f"Died: {died}")
+        if jump_conditions:
+            if action == GameActions.JUMP:
+                reward += 5  # Strong reward for jumping when needed
+            else:
+                reward -= 3  # Penalty for failing to jump
+
+            # --- Discourage unnecessary jumps ---
+        elif action == GameActions.JUMP:
+            reward -= 2  # Small penalty for jumping when unnecessary
+
+        # --- Distance reward ---
+        current_distance = ((current_x - exit_x) ** 2 + (current_y - exit_y) ** 2) ** 0.5
+        if self.previous_exit_distance is not None:
+            delta = self.previous_exit_distance - current_distance
+            reward += delta * 10  # Reward progress
+        self.previous_exit_distance = current_distance
+
+        # --- Essential movement rewards ---
+        if action == GameActions.MOVE_RIGHT:
+            reward += 10  # Encourage forward motion
+
+        if action == GameActions.JUMP:
+            # Only reward jump if there's something to jump over
+            if state_dict["water_ahead"] or state_dict["space_ahead"] or not state_dict["path_clear"]:
+                reward += 5
+            else:
+                reward -= 5  # Useless jump
+
+            # Penalize jump spam
+            if self.jump_cooldown > 0:
+                reward -= 5
+            self.jump_cooldown = 3
+        else:
+            self.jump_cooldown = max(0, self.jump_cooldown - 1)
+
+        # --- Discourage stopping ---
+        if action == GameActions.STOP:
+            reward -= 5
+
+        # --- Small time penalty ---
+        reward -= 0.2
 
         self.total_reward += reward
         return reward
-
-    def _movement_reward(self, state_dict, action):
-        reward = 0
-
-        on_ground = bool(state_dict["on_ground"])
-        in_water = bool(state_dict["in_water"])
-        ground_distance = state_dict["ground_distance"]
-        path_clear = bool(state_dict["path_clear"])
-        water_ahead = bool(state_dict["water_ahead"])
-
-        should_jump = in_water or ground_distance > 0.4 or not path_clear
-
-        # Walk when on ground and path is clear
-        if on_ground and not should_jump:
-            if action in [GameActions.MOVE_LEFT, GameActions.MOVE_RIGHT]:
-                reward += 0.5  # encourage walking
-            elif action == GameActions.JUMP:
-                reward -= 0.4  # penalize unnecessary jump
-
-        # Jump if needed (water, gaps, or wall)
-        if should_jump:
-            if action == GameActions.JUMP:
-                reward += 0.6  # correct behavior
-            elif action in [GameActions.MOVE_LEFT, GameActions.MOVE_RIGHT]:
-                reward -= 0.3  # discourage walking into obstacle/gap
-
-        return reward
-
-    # def __init__(self):
-    #     self.total_reward = 0
-    #     self.previous_exit_distance = None
-    #     self.last_exit_direction = 1  # 1=right, -1=left
-    #
-    # def calculate_reward(self, state_dict, state, action, died):
-    #
-    #     # Update exit direction tracking
-    #     exit_dx = state_dict["exit_distance_x"]
-    #     if exit_dx != 0:
-    #         self.last_exit_direction = 1 if exit_dx > 0 else -1
-    #
-    #     reward = 0
-    #     reward += self._movement_reward(state_dict, action)
-    #     reward += self._exit_reward(state_dict)
-    #     reward += 0.005  # exploration bonus
-    #
-    #     if died:
-    #         reward = -1000  # large negative reward for death
-    #
-    #     reward = np.clip(reward, -1.0, 1.0)
-    #
-    #     print(f"Action: {action}, Reward: {reward:.4f}, "
-    #           f"GroundDist: {state_dict['ground_distance']:.2f}, InWater: {state_dict['in_water']}, "
-    #           f"PathClear: {state_dict['path_clear']}, WaterAhead: {state_dict['water_ahead']}, "
-    #           f"WaterBelow: {state_dict['water_below']}, SpaceAhead: {state_dict['space_ahead']}, "
-    #           f"LeftHit: {state_dict['tile_left_hit']}, RightHit: {state_dict['tile_right_hit']}, "
-    #           f"Died: {died}")
-    #
-    #     self.total_reward += reward
-    #     return reward
-    #
-    # def _movement_reward(self, state_dict, action):
-    #     reward = 0
-    #     on_ground = state_dict["on_ground"]
-    #     in_water = state_dict["in_water"]
-    #     ground_distance = state_dict["ground_distance"]
-    #     path_clear = state_dict["path_clear"]
-    #     space_ahead = state_dict["space_ahead"]
-    #     water_ahead = state_dict["water_ahead"]
-    #
-    #     # Determine required movement direction based on exit position
-    #     target_direction = self.last_exit_direction
-    #     moving_forward = (action == GameActions.MOVE_RIGHT if target_direction == 1
-    #                       else action == GameActions.MOVE_LEFT)
-    #
-    #
-    #
-    #     # Jump required for obstacles/gaps/water
-    #     should_jump = (
-    #             (not path_clear and not on_ground) or  # Wall jumping
-    #             (space_ahead and ground_distance > 1.0) or  # Gap
-    #             water_ahead or
-    #             in_water
-    #     )
-    #
-    #     if should_jump:
-    #         if action == GameActions.JUMP:
-    #             reward += 0.6
-    #             # Encourage moving in target direction while jumping
-    #             if moving_forward:
-    #                 reward += 0.3
-    #         elif moving_forward:
-    #             # Don't penalize forward movement during needed jumps
-    #             reward -= 0.1
-    #         else:
-    #             reward -= 0.2
-    #     else:
-    #         if moving_forward:
-    #             reward += 0.7  # Strong reward for forward progress
-    #         elif action in [GameActions.MOVE_LEFT, GameActions.MOVE_RIGHT]:
-    #             reward += 0.3  # Some reward for lateral movement
-    #
-    #         if action == GameActions.JUMP and not (space_ahead or water_ahead):
-    #             reward -= 0.5  # Penalize unnecessary jumping
-    #
-    #     return reward
-
-    def _exit_reward(self, state_dict):
-        exit_reward = 0
-        # current_distance = np.sqrt(
-        #     state_dict["exit_distance_x"] ** 2 + state_dict["exit_distance_y"] ** 2
-        # )
-        current_distance = np.sqrt(
-            state_dict["exit_tile_x"] ** 2 + state_dict["exit_tile_y"] ** 2
-        )
-
-        if self.previous_exit_distance is not None:
-            delta = self.previous_exit_distance - current_distance
-            exit_reward += np.clip(delta * 2.0, -0.5, 1.0)
-
-        self.previous_exit_distance = current_distance
-
-        if state_dict["near_exit"]:
-            exit_reward += 5.0
-
-        return exit_reward
 
     def calculate_total_reward(self):
         return self.total_reward
@@ -158,3 +248,4 @@ class RewardAI:
     def reset_total_reward(self):
         self.total_reward = 0
         self.previous_exit_distance = None
+        self.jump_cooldown = 0

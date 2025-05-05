@@ -283,9 +283,9 @@ def run_game():
             # Terminal state checks
             done = not player.alive or reached_exit
 
-            print(f"Iteration: {iteration}, Type: {action_type}, Epsilon: {agent.epsilon:.4f}, Random: {rand_values}, "
-                  f"Action: {GameActions(chosen_action).name}, Reward: {reward:.2f}, "
-                  f"Total: {reward_ai.total_reward:.2f}, Health: {player.health}")
+            # print(f"Iteration: {iteration}, Type: {action_type}, Epsilon: {agent.epsilon:.4f}, Random: {rand_values}, "
+            #       f"Action: {GameActions(chosen_action).name}, Reward: {reward:.2f}, "
+            #       f"Total: {reward_ai.total_reward:.2f}, Health: {player.health}")
 
             # Add to reward calculation
             if DEBUG:
@@ -295,7 +295,7 @@ def run_game():
 
             # Rember
             agent.remember(state, chosen_action, reward, next_state, done)
-            agent.replay()
+            agent.replay(episode)
             iteration += 1
 
 
@@ -312,6 +312,7 @@ def run_game():
             iteration = 0
             save_data = False
             reward_ai.reset_total_reward()
+            agent.end_episode()  # Decay epsilon HERE (once per episode)
         if not save_data:
             reset_game(True)
 
