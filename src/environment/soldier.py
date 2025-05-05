@@ -89,6 +89,7 @@ class Soldier(pygame.sprite.Sprite):
         # jump
         if self.jump == True and self.in_air == False:
             self.vel_y = -12.25 #14
+            self.vel_x = 3 * self.direction
             self.jump = False
             self.in_air = True
 
@@ -96,7 +97,10 @@ class Soldier(pygame.sprite.Sprite):
         self.vel_y += GRAVITY
         if self.vel_y > 10:
             self.vel_y
+            # self.vel_x
+
         dy += self.vel_y
+        # dx += self.vel_x
 
         # check for collision
         for tile in world.obstacle_list:
