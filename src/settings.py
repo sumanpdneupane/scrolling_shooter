@@ -99,7 +99,7 @@ BLACK = (0, 0, 0)
 PINK = (235, 65, 54)
 
 #define font
-font = pygame.font.SysFont('Futura', 30)
+font = pygame.font.SysFont('Futura', 20)
 
 #create sprite groups
 enemy_group = pygame.sprite.Group()

@@ -1,170 +1,366 @@
 import enum
 import numpy as np
-
-from src.environment.soldier import Soldier
 from src.settings import *
 
 
-class ExtractGameState():
+# class ExtractGameState:
+#     def extract_state(self, player, world, enemy_group, exit_group):
+#         state = {
+#             # Player status
+#             "player_pos_x": player.rect.centerx / SCREEN_WIDTH,
+#             "player_pos_y": player.rect.centery / SCREEN_HEIGHT,
+#             "in_air": int(player.in_air),
+#             "action": player.action,
+#             "direction": player.direction,
+#             "ammo": player.ammo,
+#             "grenades": player.grenades,
+#             "health": player.health / player.max_health,
+#
+#             # Enemy information
+#             "nearest_enemy_dx": 0.0,
+#             "nearest_enemy_dy": 0.0,
+#             "nearest_enemy_health": 0.0,
+#             "nearby_enemies": 0.0,
+#
+#             # Environment state
+#             "exit_distance_x": 0.0,
+#             "exit_distance_y": 0.0,
+#             "near_exit": 0,
+#             "on_ground": int(self._is_on_ground(player)),
+#             "ground_distance": 0.0,
+#             "in_water": 0,
+#             "platform_type": 0,
+#             "pickup_nearby": 0
+#         }
+#
+#         # Enemy calculations
+#         nearest_enemy = self._get_nearest_enemy(player, enemy_group)
+#         if nearest_enemy:
+#             state.update({
+#                 "nearest_enemy_dx": (nearest_enemy.rect.centerx - player.rect.centerx) / SCREEN_WIDTH,
+#                 "nearest_enemy_dy": (nearest_enemy.rect.centery - player.rect.centery) / SCREEN_HEIGHT,
+#                 "nearest_enemy_health": nearest_enemy.health / 100
+#             })
+#
+#         state["nearby_enemies"] = sum(
+#             1 for enemy in enemy_group
+#             if player.rect.colliderect(enemy.vision)
+#         ) / 10
+#
+#         # Exit calculations
+#         if exit_group:
+#             exit = exit_group.sprites()[0]
+#             state.update({
+#                 "exit_distance_x": (exit.rect.centerx - player.rect.centerx) / SCREEN_WIDTH,
+#                 "exit_distance_y": (exit.rect.centery - player.rect.centery) / SCREEN_HEIGHT,
+#                 "near_exit": int(abs(exit.rect.centerx - player.rect.centerx) < 150)
+#             })
+#
+        # # Environment interactions
+        # state.update({
+        #     "ground_distance": self._calculate_ground_distance(player, world),
+        #     "in_water": True if pygame.sprite.spritecollide(player, water_group, False) else False,
+        #     "platform_type": 1 if pygame.sprite.spritecollide(player, water_group, False) else 0,
+        #     "pickup_nearby": any(
+        #         item_box.rect.colliderect(pygame.Rect(
+        #             player.rect.centerx - 200,
+        #             player.rect.centery - 200,
+        #             400, 400
+        #         ))
+        #         for item_box in item_box_group
+        #     )
+        # })
+#
+#         # Add these state features
+#         state.update({
+#             "path_clear": int(self._is_path_clear(player, world)),
+#             "moving_forward": int(player.direction == 1),
+#             "space_ahead": self._check_space_ahead(player, world)
+#         })
+#
+#         # Update water conditions
+#         state.update({
+#             "water_ahead": self._check_water_ahead(player, world),
+#             "water_below": self._check_water_below(player, world)  # New check for water below
+#         })
+#
+#         # 1 if the player’s side is touching a tile. 0 otherwise.
+#         state.update({
+#             "tile_left_hit": int(self._check_tile_side_hit(player, world, direction=-1)),
+#             "tile_right_hit": int(self._check_tile_side_hit(player, world, direction=1))
+#         })
+#
+#         return state, np.array(list(state.values()), dtype=np.float32)
+#
+#     # Helper methods
+#     def _check_tile_side_hit(self, player, world, direction):
+#         """
+#         Check if the player is touching a tile on the left (direction = -1) or right (direction = 1).
+#         """
+#         offset = TILE_SIZE * 2
+#         check_x = player.rect.centerx + direction * offset
+#         check_y_top = player.rect.top + 5
+#         check_y_bottom = player.rect.bottom - 5
+#
+#         return any(
+#             tile_rect.collidepoint(check_x, y)
+#             for y in range(check_y_top, check_y_bottom)
+#             for tile_img, tile_rect in world.obstacle_list
+#         )
+#
+    # def _get_nearest_enemy(self, player, enemy_group):
+    #     return min(
+    #         enemy_group,
+    #         key=lambda e: abs(e.rect.centerx - player.rect.centerx),
+    #         default=None
+    #     )
+#
+#     def _calculate_ground_distance(self, player, world):
+#         player_bottom = player.rect.bottom
+#         return min(
+#             (tile_rect.top - player_bottom
+#              for tile_img, tile_rect in world.obstacle_list
+#              if tile_rect.collidepoint(player.rect.centerx, tile_rect.top)
+#              and tile_rect.top > player_bottom),
+#             default=SCREEN_HEIGHT
+#         ) / 500
+#
+    # def _is_on_ground(self, player):
+    #     return player.rect.bottom >= GROUND_THRESHOLD
+#
+#     def _is_path_clear(self, player, world):
+#         # Check 200 pixels ahead in movement direction
+#         look_ahead = player.rect.centerx + 200 * player.direction
+#
+#         return not any(tile_rect.collidepoint(look_ahead, player.rect.centery)
+#                        for tile_img, tile_rect in world.obstacle_list)
+#
+#     def _check_water_ahead(self, player, world):
+#         # Check for water in the next 300 pixels
+#         tile_width = TILE_SIZE * 2
+#         future_x = player.rect.centerx + tile_width * player.direction
+#         future_y = player.rect.centery + tile_width
+#         return any(water.rect.collidepoint(future_x, future_y)
+#                    for water in water_group)
+#
+#
+    # def _check_water_below(self, player, world):
+    #     # Check for water 2 tile ahead of the player in the direction they're moving
+    #     # Calculate the future position 1 tile ahead based on the player's direction
+    #     tile_width = TILE_SIZE * 1
+    #     future_x = player.rect.centerx + player.direction * tile_width
+    #     future_y = player.rect.bottom  # Check slightly below the player's feet
+    #
+    #     # Check for water at the calculated future position
+    #     return any(water.rect.collidepoint(future_x, future_y) for water in water_group)
+#
+#     def _check_space_ahead(self, player, world):
+#         tile_width = TILE_SIZE
+#         tile_height = TILE_SIZE
+#         future_y = player.rect.bottom + 5  # Just below the player's feet
+#
+#         # Check at 1 and 2 tiles ahead
+#         for step in [1, 2]:
+#             future_x = player.rect.centerx + player.direction * tile_width * step
+#
+#             if any(tile_rect.collidepoint(future_x, future_y)
+#                    for tile_img, tile_rect in world.obstacle_list):
+#                 return False  # Ground exists in at least one step ahead
+#
+#         return True  # No ground in next two tiles: it's a hole/space ahead
+
+
+class ExtractGameState:
     def extract_state(self, player, world, enemy_group, exit_group):
-        state = {}
+        # Convert all positions to tile coordinates
+        player_tile_x = player.rect.centerx // TILE_SIZE
+        player_tile_y = player.rect.centery // TILE_SIZE
 
-        # 1. Player's normalized X and Y position
-        state["player_pos_x"] = player.rect.centerx / SCREEN_WIDTH
-        state["player_pos_y"] = player.rect.centery / SCREEN_HEIGHT
+        state = {
+            # Tile-based position features
+            "player_tile_x": player_tile_x,
+            "player_tile_y": player_tile_y,
+            "direction": player.direction,
+            "in_air": int(player.in_air),
+            "on_ground": int(self._is_on_ground(player)),
 
-        # 2. Is player in air? (binary)
-        state["player_in_air"] = int(player.in_air)
+            # Inventory/health (normalized)
+            "health": player.health / player.max_health,
+            "ammo": player.ammo / 10.0,
+            "grenades": player.grenades / 5.0,
 
-        # 3. Is player taking action? [0: idle, 1: run, 2: jump, 3: death]
-        state["player_action"] = player.action
+            # Enemy information
+            "nearest_enemy_tile_x": 0,
+            "nearest_enemy_tile_y": 0,
+            "nearest_enemy_health": 0.0,
+            "nearby_enemies": 0.0,
 
-        # 4. Is player moving in which direction? [-1: left, 1: right]
-        state["player_direction"] = player.direction
+            # Environment state
+            "exit_tile_x": 0,
+            "exit_tile_y": 0,
+            "tiles_to_exit_x": 0,
+            "tiles_to_exit_y": 0,
+            "near_exit": 0,
+            "ground_tiles_below": 0.0,
+            "water_ahead": 0,
+            "water_below": 0,
+            "in_water": 0,
+            "ledge_ahead": 0,
+            "space_ahead": 0,
+            "path_clear": 0,
+            "tile_left_hit": 0,
+            "tile_right_hit": 0
+        }
 
-        # 5. Ammo left with player
-        state["ammo"] = player.ammo
-
-        # 6. Grenades left with player
-        state["grenades"] = player.grenades
-
-        # 7. Health in percentage
-        state["health_percentage"] = player.health / player.max_health
-
-        # 8. Distance to nearest enemy (X and Y, normalized)
+        # Enemy calculations
         nearest_enemy = self._get_nearest_enemy(player, enemy_group)
         if nearest_enemy:
-            dx = (nearest_enemy.rect.centerx - player.rect.centerx) / SCREEN_WIDTH
-            dy = (nearest_enemy.rect.centery - player.rect.centery) / SCREEN_HEIGHT
-            state["nearest_enemy_dx"] = dx
-            state["nearest_enemy_dy"] = dy
-        else:
-            # Use neutral values when no enemies exist
-            state["nearest_enemy_dx"] = 0.0
-            state["nearest_enemy_dy"] = 0.0
+            state.update({
+                "nearest_enemy_tile_x": nearest_enemy.rect.centerx // TILE_SIZE,
+                "nearest_enemy_tile_y": nearest_enemy.rect.centery // TILE_SIZE,
+                "nearest_enemy_health": nearest_enemy.health / 100.0
+            })
 
-        # 8. Distance to exit (normalized)
-        if exit_group:  # Check if there are any exits
-            # Find nearest exit (assuming there's only one exit in the group)
-            exit = exit_group.sprites()[0] if exit_group else None
-            exit_dx = (exit.rect.centerx - player.rect.centerx) / SCREEN_WIDTH
-            exit_dy = (exit.rect.centery - player.rect.centery) / SCREEN_HEIGHT
-        else:
-            exit_dx = 0.0
-            exit_dy = 0.0
-        state["exit_distance_x"] = exit_dx
-        state["exit_distance_y"] = exit_dy
+        # Count enemies within 4 tiles radius
+        state["nearby_enemies"] = sum(
+            1 for enemy in enemy_group
+            if abs((enemy.rect.centerx // TILE_SIZE) - player_tile_x) <= 4
+        ) / 5.0  # Normalize to 0-2 range
 
-        # 2. nearest_enemy_health
-        nearest_enemy_health = 100
-        min_dist = float('inf')
-        for enemy in enemy_group:
-            dist = abs(player.rect.centerx - enemy.rect.centerx)
-            if dist < min_dist:
-                min_dist = dist
-                nearest_enemy_health = enemy.health
-        state["nearest_enemy_health"] = nearest_enemy_health / 100 # normalize 0-1
+        # Exit calculations
+        if exit_group:
+            exit = exit_group.sprites()[0]
+            exit_tile_x = exit.rect.centerx // TILE_SIZE
+            exit_tile_y = exit.rect.centery // TILE_SIZE
+            state.update({
+                "exit_tile_x": exit_tile_x,
+                "exit_tile_y": exit_tile_y,
+                "tiles_to_exit_x": abs(exit_tile_x - player_tile_x),
+                "tiles_to_exit_y": abs(exit_tile_y - player_tile_y),
+                "near_exit": int(abs(exit.rect.centerx // TILE_SIZE - player.rect.centerx // TILE_SIZE) < 7)
+            })
 
-        # 3. number_of_enemies_nearby
-        nearby_enemies = sum(1 for enemy in enemy_group if player.rect.colliderect(enemy.vision))
-        state["nearby_enemies"] = nearby_enemies / 10  # assume max 10 enemies near (normalize)
+        # Environment interactions
+        state.update({
+            "ground_distance": self._calculate_ground_distance(player, world),
+            "water_ahead": int(self._check_water_ahead(player)),
+            "water_below": int(self._check_water_ahead(player)),
+            "ledge_ahead": int(self._check_ledge_ahead(player, world)),
+            "space_ahead": int(self._check_space_ahead(player, world)),
+            "path_clear": int(self._is_path_clear(player, world)),
+            "tile_left_hit": int(self._check_tile_side_hit(player, world, -1)),
+            "tile_right_hit": int(self._check_tile_side_hit(player, world, 1)),
+            "in_water": 1 if pygame.sprite.spritecollide(player, water_group, False) else 0,
+            "platform_type": 1 if pygame.sprite.spritecollide(player, water_group, False) else 0,
+            "pickup_nearby": any(
+                item_box.rect.colliderect(pygame.Rect(
+                    player.rect.centerx - 200,
+                    player.rect.centery - 200,
+                    400, 400
+                ))
+                for item_box in item_box_group
+            )
+        })
 
-        # 9. Is player near the exit (binary)
-        state["near_exit"] = int(self._check_exit_nearby(player, exit_group))
+        return state, np.array(list(state.values()), dtype=np.float32)
 
-        # 10. Is player on ground? (binary)
-        state["on_ground"] = int(self._is_on_ground(player))
-
-        # 4. distance_to_ground_below
-        ground_distance = SCREEN_HEIGHT
-        player_bottom = player.rect.bottom
-        player_centerx = player.rect.centerx
-        for tile_img, tile_rect in world.obstacle_list:
-            if tile_rect.collidepoint(player_centerx, tile_rect.top) and tile_rect.top > player_bottom:
-                dist = tile_rect.top - player_bottom
-                ground_distance = min(ground_distance, dist)
-        state["ground_distance"] = min(ground_distance, 500) / 500  # normalize (assuming 500px max)
-
-        # 11. Is player in water? (binary)
-        state["in_water"] = int(self._is_in_water(player, water_group))
-
-        # 12. Is player in space? (binary)
-        state["in_space"] = int(self._is_in_space(player))
-
-        # 6. current_platform_type
-        platform_type = 0  # 0: normal ground, 1: water, 2: ice (future if you add ice tiles)
-        if pygame.sprite.spritecollide(player, water_group, False):
-            platform_type = 1
-        state["platform_type"] = platform_type
-
-        # 7. available_pickups_nearby
-        pickup_nearby = any(
-            item_box.rect.colliderect(pygame.Rect(player.rect.centerx - 200, player.rect.centery - 200, 400, 400))
-            for item_box in item_box_group
-        )
-        state["pickup_nearby"] = pickup_nearby
-
-        # 5. is_under_attack
-        # if not hasattr(player, 'prev_health'):
-        #     player.prev_health = player.health
-        #     player.hurt_timer = 0
-        # if player.health < player.prev_health:
-        #     player.hurt_timer = 20  # stay hurt for 20 frames
-        # is_under_attack = int(player.hurt_timer > 0)
-        # inputs.append(is_under_attack)
-        # player.hurt_timer = max(0, player.hurt_timer - 1)
-        # player.prev_health = player.health
-
-        # 8. time_left (optional: if you add timer)
-        # Let's assume you have a 'game_timer' somewhere
-        # if 'game_timer' in globals():
-        #     inputs.append(game_timer / total_time)  # normalized 0-1
-        # else:
-        #     inputs.append(1.0)  # full time left if no timer
-
-        return np.array(list(state.values()), dtype=np.float32)
-
-    def _get_nearest_enemy(self, player, enemy_group):
-        min_dist = float('inf')
-        nearest = None
-        for enemy in enemy_group:
-            dist = abs(enemy.rect.centerx - player.rect.centerx)
-            if dist < min_dist:
-                min_dist = dist
-                nearest = enemy
-        return nearest
-
-    def _check_exit_nearby(self, player, exit_group):
-        for exit in exit_group:
-            if abs(exit.rect.centerx - player.rect.centerx) < 150:
-                return True
-        return False
-
-    # Helper method to check if the player is on the ground
+    # Tile-based helper methods
     def _is_on_ground(self, player):
-        return player.rect.bottom >= GROUND_THRESHOLD  # Adjust threshold as needed
+        return player.rect.bottom // TILE_SIZE >= GROUND_THRESHOLD
+    def _get_nearest_enemy(self, player, enemy_group):
+        """Find nearest enemy based on tile distance in x-axis"""
+        player_tile_x = player.rect.centerx // TILE_SIZE
 
-    # Helper method to check if the player is in water
-    def _is_in_water(self, player, water_group):
-        if pygame.sprite.spritecollide(player, water_group, False):
-            return True
-        return False
+        return min(
+            enemy_group,
+            key=lambda e: abs((e.rect.centerx // TILE_SIZE) - player_tile_x),
+            default=None
+        )
 
-    # Helper method to check if the player is in space (high altitude or no terrain nearby)
-    def _is_in_space(self, player):
-        # Check if the player is off the screen (out of the screen bounds)
-        # if player.rect.right < 0 or player.rect.left > SCREEN_WIDTH or player.rect.bottom < 0 or player.rect.top > SCREEN_HEIGHT:
-        #     # Player is out of screen bounds, consider them in space zone
-        #     return True
-        # return False
-        in_space = int(player.rect.top > SCREEN_HEIGHT or player.rect.left < 0 or player.rect.right > SCREEN_WIDTH)
-        return in_space
+    def _calculate_ground_distance(self, player, world):
+        player_bottom = player.rect.bottom
+        min_distance = min(
+            (tile_rect.top - player_bottom
+             for tile_img, tile_rect in world.obstacle_list
+             if tile_rect.centerx == player.rect.centerx
+             and tile_rect.top > player_bottom),
+            default=SCREEN_HEIGHT - player_bottom
+        )
+        return min_distance // TILE_SIZE  # Return tile count
 
+    def _check_water_ahead(self, player):
+        look_ahead_x = player.rect.centerx + (TILE_SIZE * 2 * player.direction)
+        look_ahead_y = player.rect.centery
+        return any(
+            water.rect.collidepoint(look_ahead_x, look_ahead_y)
+            for water in water_group
+        )
+
+    def _check_water_below(self, player):
+        """Check for water in the tile directly below and one tile ahead"""
+        # Get player's current tile position
+        player_tile_x = player.rect.centerx // TILE_SIZE
+        player_tile_y = player.rect.centery // TILE_SIZE
+
+        # Calculate tile position to check (1 tile ahead in movement direction)
+        check_tile_x = player_tile_x + player.direction
+        check_tile_y = (player.rect.bottom // TILE_SIZE)  # Tile directly below feet
+
+        # Check if any water exists at this tile position
+        return any(
+            (water.rect.centerx // TILE_SIZE == check_tile_x) and
+            (water.rect.centery // TILE_SIZE == check_tile_y)
+            for water in water_group
+        )
+
+    def _check_ledge_ahead(self, player, world):
+        check_x = player.rect.centerx + (TILE_SIZE * player.direction)
+        check_y = player.rect.bottom + TILE_SIZE
+        return not any(
+            tile_rect.collidepoint(check_x, check_y)
+            for tile_img, tile_rect in world.obstacle_list
+        )
+
+    def _is_path_clear(self, player, world):
+        """Check if path is clear 4 tiles ahead in movement direction"""
+        player_tile_x = player.rect.centerx // TILE_SIZE
+        look_ahead_tiles = player_tile_x + (4 * player.direction)  # 4 tiles ahead
+
+        # Check for obstacles at same Y level within tile range
+        return not any(
+            (tile_rect.centerx // TILE_SIZE == look_ahead_tiles) and
+            (abs(tile_rect.centery // TILE_SIZE - (player.rect.centery // TILE_SIZE)) <= 1)
+            for tile_img, tile_rect in world.obstacle_list
+        )
+
+    def _check_space_ahead(self, player, world):
+        """Check for holes 1-2 tiles ahead and below"""
+        player_tile_x = player.rect.centerx // TILE_SIZE
+        player_tile_y_bottom = (player.rect.bottom) // TILE_SIZE
+
+        for steps in [1, 2]:
+            check_tile_x = player_tile_x + (player.direction * steps)
+            # Check tile directly below at stepped position
+            if any(
+                    (tile_rect.centerx // TILE_SIZE == check_tile_x) and
+                    (tile_rect.centery // TILE_SIZE == player_tile_y_bottom)
+                    for tile_img, tile_rect in world.obstacle_list
+            ):
+                return False  # Ground exists at this step
+
+        return True  # No ground found at either step
+
+    def _check_tile_side_hit(self, player, world, direction):
+        check_x = player.rect.centerx + (direction * TILE_SIZE)
+        return any(
+            tile_rect.collidepoint(check_x, player.rect.centery)
+            for tile_img, tile_rect in world.obstacle_list
+        )
 
 class GameActions(enum.IntEnum):
-    No_action = 0
-    MoveLeft = 1
-    MoveRight = 2
-    Jump = 3
-    Shoot = 4
-    Grenade = 5
+    MOVE_LEFT = 0
+    MOVE_RIGHT = 1
+    JUMP = 2
+    SHOOT = 3
+    GRENADE = 4
+    STOP = 5
