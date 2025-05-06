@@ -47,10 +47,11 @@ class Soldier(pygame.sprite.Sprite):
             # reset temporary list of images
             temp_list = []
             # count number of files in the folder
-            num_of_frames = len(os.listdir(f'src/assets/images/{self.char_type}/{animation}'))
+            num_of_frames = len(os.listdir(f'src/assets/images/{self.char_type}/{animation}')) - 1
             for i in range(num_of_frames):
                 img = pygame.image.load(f'src/assets/images/{self.char_type}/{animation}/{i}.png').convert_alpha()
                 img = pygame.transform.scale(img, (int(img.get_width() * scale), int(img.get_height() * scale)))
+                img = clip_image(img, 0.26, 0.36)
                 temp_list.append(img)
             self.animation_list.append(temp_list)
 
@@ -77,12 +78,21 @@ class Soldier(pygame.sprite.Sprite):
         dy = 0
 
         # assign movement variables if moving left or right
+        # if moving_left:
+        #     dx = -self.speed - 1.8
+        #     self.flip = True
+        #     self.direction = -1
+        # if moving_right:
+        #     dx = self.speed + 1.8
+        #     self.flip = False
+        #     self.direction = 1
+
         if moving_left:
-            dx = -self.speed - 1.8
+            dx = -self.speed
             self.flip = True
             self.direction = -1
         if moving_right:
-            dx = self.speed + 1.8
+            dx = self.speed
             self.flip = False
             self.direction = 1
 
@@ -271,3 +281,7 @@ class Soldier(pygame.sprite.Sprite):
 
     def draw(self):
         screen.blit(pygame.transform.flip(self.image, self.flip, False), self.rect)
+
+        if DEBUG:
+            # Debug: Draw red rectangle around the collision box
+            pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)

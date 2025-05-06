@@ -234,9 +234,55 @@ def perform_action(action):
 # if action in keys:
 #     pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=keys[action]))
 
+TILE_SIZE_W = TILE_SIZE
+TILE_SIZE_H = TILE_SIZE
 
 def run_game():
     global run, start_game, world, player, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro, save_data, done
+    extract_state = ExtractGameState()
+
+    # while run:
+    #     clock.tick(FPS)
+    #     update()
+    #
+    #     state_dict, state = extract_state.extract_state(player, world, enemy_group, exit_group)
+    #
+    #     # Event Handling
+    #     for event in pygame.event.get():
+    #         # quit game
+    #         if event.type == pygame.QUIT:
+    #             run = False
+    #         # Only process input if the agent is not controlling
+    #         # if not save_data:
+    #         # keyboard presses
+    #         if event.type == pygame.KEYDOWN:
+    #             if event.key == pygame.K_a:
+    #                 moving_left = True
+    #             if event.key == pygame.K_d:
+    #                 moving_right = True
+    #             if event.key == pygame.K_SPACE:
+    #                 shoot = True
+    #             if event.key == pygame.K_q:
+    #                 grenade = True
+    #             if event.key == pygame.K_w and player.alive:
+    #                 player.jump = True
+    #                 jump_fx.play()
+    #             if event.key == pygame.K_ESCAPE:
+    #                 run = False
+    #         # keyboard button released
+    #         if event.type == pygame.KEYUP:
+    #             if event.key == pygame.K_a:
+    #                 moving_left = False
+    #             if event.key == pygame.K_d:
+    #                 moving_right = False
+    #             if event.key == pygame.K_SPACE:
+    #                 shoot = False
+    #             if event.key == pygame.K_q:
+    #                 grenade = False
+    #                 grenade_thrown = False
+    #
+    #     pygame.display.update()
+    # pygame.quit()
 
     save_manager = SaveFutureLearning(MODEL_PATH, EPSILON_PATH, EPISODE_PATH)
     episode = save_manager.load_episode()

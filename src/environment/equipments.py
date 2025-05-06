@@ -71,9 +71,6 @@ class Grenade(pygame.sprite.Sprite):
 					self.vel_y = 0
 					dy = tile[1].top - self.rect.bottom
 
-
-
-
 		#update grenade position
 		self.rect.x += dx + get_screen_scroll()
 		self.rect.y += dy
