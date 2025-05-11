@@ -7,7 +7,9 @@ from src.utils import button
 # mixer.init()
 # pygame.init()
 
-DEBUG = True
+DEBUG = False
+DEBUG_SHOW_COLLISION_BOX = False
+DEBUG_ENABLE_SOUND = False
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = int(SCREEN_WIDTH * 0.8)
 
@@ -49,14 +51,14 @@ TRAINING_LOG_PATH = "src/data_logs/training_log.csv"
 
 #load music and sounds
 pygame.mixer.music.load('src/assets/audio/music2.mp3')
-pygame.mixer.music.set_volume(0.00)
+pygame.mixer.music.set_volume(0.05 if DEBUG_ENABLE_SOUND else 0.0)
 pygame.mixer.music.play(-1, 0.0, 5000)
 jump_fx = pygame.mixer.Sound('src/assets/audio/jump.wav')
-jump_fx.set_volume(0.00)
+jump_fx.set_volume(0.03 if DEBUG_ENABLE_SOUND else 0.0)
 shot_fx = pygame.mixer.Sound('src/assets/audio/shot.wav')
-shot_fx.set_volume(0.00)
+shot_fx.set_volume(0.04 if DEBUG_ENABLE_SOUND else 0.0)
 grenade_fx = pygame.mixer.Sound('src/assets/audio/grenade.wav')
-grenade_fx.set_volume(0.00)
+grenade_fx.set_volume(0.07 if DEBUG_ENABLE_SOUND else 0.0)
 
 
 #load images
@@ -66,12 +68,6 @@ exit_img = pygame.image.load('src/assets/images/exit_btn.png').convert_alpha()
 restart_img = pygame.image.load('src/assets/images/restart_btn.png').convert_alpha()
 #background
 scale = 2
-# pine1_img = pygame.image.load('src/assets/images/Background/pine1.png').convert_alpha()
-# pine1_img = pygame.transform.scale(pine1_img, (int(pine1_img.get_width() * scale), int(pine1_img.get_height() * scale)))
-# pine2_img = pygame.image.load('src/assets/images/Background/pine2.png').convert_alpha()
-# pine2_img = pygame.transform.scale(pine2_img, (int(pine2_img.get_width() * scale), int(pine2_img.get_height() * scale * scale)))
-# mountain_img = pygame.image.load('src/assets/images/Background/mountain.png').convert_alpha()
-# mountain_img = pygame.transform.scale(mountain_img, (int(mountain_img.get_width() * scale), int(mountain_img.get_height() * 1.5)))
 sky_img = pygame.image.load('src/assets/images/Background/sky_cloud_1.png').convert_alpha()
 sky_img = pygame.transform.scale(sky_img, (int(sky_img.get_width() * scale), int(sky_img.get_height() * 1.5)))
 mountain_img = pygame.image.load('src/assets/images/Background/background_all.png').convert_alpha()
@@ -123,6 +119,8 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 PINK = (235, 65, 54)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
 
 #define font
 font = pygame.font.SysFont('Futura', 20)
@@ -171,7 +169,7 @@ def reset_level():
 	exit_group.empty()
 
 	#create empty tile list
-	return get_world_data()
+	return get_world_data(level)
 
 _screen_scroll = 0
 
@@ -183,7 +181,7 @@ def set_screen_scroll(screen_scroll):
     global _screen_scroll
     _screen_scroll = screen_scroll
 
-def get_world_data():
+def get_world_data(level):
 	# create empty tile list
 	world_data = []
 	for row in range(ROWS):

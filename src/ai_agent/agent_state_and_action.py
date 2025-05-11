@@ -3,8 +3,8 @@ import numpy as np
 from src.settings import *
 
 class GameActions(enum.IntEnum):
-    MOVE_LEFT = 0
-    MOVE_RIGHT = 1
+    MOVE_RIGHT = 0
+    MOVE_LEFT = 1
     JUMP = 2
     SHOOT = 3
     GRENADE = 4
@@ -14,7 +14,6 @@ class GameActions(enum.IntEnum):
 class ExtractGameState:
     def extract_state(self, player, world, enemy_group, exit_group):
         #--------Tiles in matrix form is = (16, 150) ---- height:  16, width:  150
-
         # Convert positions to tile coordinates
         player_tile_x = player.rect.centerx // TILE_SIZE
         player_tile_y = player.rect.centery // TILE_SIZE
