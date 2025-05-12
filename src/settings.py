@@ -18,10 +18,10 @@ pygame.display.set_caption('Shooter')
 
 #set framerate
 clock = pygame.time.Clock()
-FPS = 60
+FPS = 40
 
 #define game variables
-GRAVITY = 0.75
+GRAVITY = 0.65
 SCROLL_THRESH = 200
 ROWS = 16
 COLS = 150
@@ -123,7 +123,7 @@ BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 
 #define font
-font = pygame.font.SysFont('Futura', 20)
+font = pygame.font.SysFont('Futura', 18)
 
 #create sprite groups
 enemy_group = pygame.sprite.Group()

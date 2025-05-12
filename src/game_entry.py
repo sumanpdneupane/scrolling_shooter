@@ -1,6 +1,15 @@
+import os
 import time
+from collections import deque
+
+import cv2
 import pygame
+from matplotlib import pyplot as plt
 from pygame import mixer
+from pygame._sdl2 import Image
+from rich import region
+from tensorflow.python.keras.backend_config import epsilon
+
 from src.graph.plot import TrainingVisualizer
 
 mixer.init()
@@ -10,7 +19,7 @@ from src.settings import *
 from src.environment.entities import ScreenFade
 from src.environment.world import World
 from src.environment.equipments import Grenade
-from src.ai_agent.agent_state_and_action import ExtractGameState, GameActions
+from src.ai_agent.agent_state_and_action import ExtractGameState, GameActions, ImageExtractorThread
 from src.ai_agent.agent import DQNAgent
 from src.ai_agent.reward import RewardAI
 from src.ai_agent.save_model_data import SaveFutureLearning
@@ -62,21 +71,21 @@ start_x = 0
 exit_x = SCREEN_WIDTH  # Default to screen width if no exit
 
 def update_game_menu():
-    global world, player, health_bar, grenade, level, start_x, exit_x
+    global world, player, health_bar, grenade, epsilon, level, start_x, exit_x, episode, total_reward, life_line, chosen_action, action_type
     # update background
     draw_bg()
     # draw world map
     world.draw()
     # show player health
     health_bar.draw(player.health)
-    # show ammo
+    # show ammo with image and count
     draw_text('AMMO: ', font, WHITE, 10, 35)
-    for x in range(player.ammo):
-        screen.blit(bullet_img, (90 + (x * 10), 40))
-    # show grenades
+    screen.blit(bullet_img, (95, 43))
+    draw_text(f' {player.ammo}', font, WHITE, 110, 35)
+    # show grenades with image and count
     draw_text('GRENADES: ', font, WHITE, 10, 60)
-    for x in range(player.grenades):
-        screen.blit(grenade_img, (135 + (x * 15), 60))
+    screen.blit(grenade_img, (135, 65))
+    draw_text(f' {player.grenades}', font, WHITE, 155, 60)
 
     # Calculate elapsed time
     current_time = pygame.time.get_ticks()
@@ -86,8 +95,8 @@ def update_game_menu():
     time_str = f"{minutes:02}:{seconds:02}"  # Format as MM:SS
 
     # Show game timer in top-right corner
-    # Show game timer and level in top-right corner
-    draw_text(f'LEVEL: {level} / {MAX_LEVELS}', font, WHITE, SCREEN_WIDTH - 150, 10)
+    # Show game timer and level in top-right corner  / {MAX_LEVELS}
+    draw_text(f'LEVEL: {level}', font, WHITE, SCREEN_WIDTH - 150, 10)
     draw_text(f'TIME: {time_str}', font, WHITE, SCREEN_WIDTH - 150, 40)
     # draw_text(f'TIME: {time_str}', font, WHITE, SCREEN_WIDTH - 150, 10)
 
@@ -130,6 +139,12 @@ def update_game_menu():
     if max_distance > 0:
         player_pos_x = mini_map_rect.left + 3 + (current_progress / max_distance) * (mini_map_rect.width - 6)
         pygame.draw.circle(screen, YELLOW, (int(player_pos_x), mini_map_rect.centery), 2)
+
+    draw_text(f'Episode: {episode}', font, WHITE, SCREEN_WIDTH - 480, 20)
+    draw_text(f'Total Reward:{total_reward:.2f}', font, WHITE, SCREEN_WIDTH - 480, 40)
+    draw_text(f'Epsilon:{epsilon:.2f}', font, WHITE, SCREEN_WIDTH - 480, 60)
+    draw_text(f'Action Type:{action_type}', font, WHITE, SCREEN_WIDTH - 480, 80)
+    draw_text(f'Action:{GameActions(chosen_action).name}', font, WHITE, SCREEN_WIDTH - 480,100)
 
 
 def update_game():
@@ -197,7 +212,7 @@ def update_player_action():
             #     world = World()
             #     player, health_bar = world.process_data(world_data)
             # Reset the world for the new level
-            world_data = get_world_data()
+            world_data = get_world_data(level)
             world = World()
             player, health_bar = world.process_data(world_data)
 
@@ -229,7 +244,7 @@ def update():
         update_game()
 
         # show intro
-        show_intro_fade()
+        # show_intro_fade()
 
         # update player actions
         update_player_action()
@@ -277,7 +292,7 @@ def perform_action(action):
     shoot = (action == GameActions.SHOOT)
 
     if action == GameActions.JUMP:
-        if player.alive and not player.in_air:
+        if player.alive and not player.in_air and player.moved_forward:
             player.jump = True
             jump_fx.play()
 
@@ -313,152 +328,158 @@ def perform_action(action):
 TILE_SIZE_W = TILE_SIZE
 TILE_SIZE_H = TILE_SIZE
 
+player_spon_point = {
+    "x": 0,
+    "y": 0
+}
+life_line = 3
+next_life = True
+
+def manual_play():
+    global run, start_game, world, player, epsilon, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro, save_data, done
+    # extract_state = ExtractGameState()
+    iteration = 0
+    while run:
+        clock.tick(FPS)
+        # current_state = extract_state.extract_image(screen)
+        # # Create the directory if it doesn't exist
+        # save_directory = "saved_images"
+        # os.makedirs(save_directory, exist_ok=True)
+        #
+        # # Save the image
+        # image_path = os.path.join(save_directory, f"game_image{iteration}.png")
+        # cv2.imwrite(image_path, current_state)
+        #
+        # print(f"Image saved to: {image_path}")
+        update()
+        iteration = iteration + 1
+        # Event Handling
+        for event in pygame.event.get():
+            # quit game
+            if event.type == pygame.QUIT:
+                run = False
+            # keyboard presses
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_a:
+                    moving_left = True
+                if event.key == pygame.K_d:
+                    moving_right = True
+                if event.key == pygame.K_SPACE:
+                    shoot = True
+                if event.key == pygame.K_q:
+                    grenade = True
+                if event.key == pygame.K_w and player.alive:
+                    player.jump = True
+                    jump_fx.play()
+                if event.key == pygame.K_ESCAPE:
+                    run = False
+            # keyboard button released
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_a:
+                    moving_left = False
+                if event.key == pygame.K_d:
+                    moving_right = False
+                if event.key == pygame.K_SPACE:
+                    shoot = False
+                if event.key == pygame.K_q:
+                    grenade = False
+                    grenade_thrown = False
+
+        pygame.display.update()
+    pygame.quit()
+
 def run_game():
-    global run, start_game, world, player, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro, save_data, done
-    extract_state = ExtractGameState()
+    global run, start_game, world, life_line, next_life, chosen_action, action_type, player, health_bar, intro_fade, death_fade, episode, total_reward, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro, save_data, done, epsilon
+
+    # Initialize the extractor
+    save_manager = SaveFutureLearning(MODEL_PATH, EPSILON_PATH, EPISODE_PATH)
+    episode = save_manager.load_episode()
+    logger = TrainingLogger()
+    visualizer = TrainingVisualizer()
+    extract_state = ExtractGameState(int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.2))
+    image_ex = ImageExtractorThread(screen, extract_state)
+    image_ex.start()
 
     if DEBUG:
-        while run:
-            clock.tick(FPS)
-            update()
-
-            state_dict, state = extract_state.extract_state(player, world, enemy_group, exit_group)
-
-            # Event Handling
-            for event in pygame.event.get():
-                # quit game
-                if event.type == pygame.QUIT:
-                    run = False
-                # Only process input if the agent is not controlling
-                # if not save_data:
-                # keyboard presses
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_a:
-                        moving_left = True
-                    if event.key == pygame.K_d:
-                        moving_right = True
-                    if event.key == pygame.K_SPACE:
-                        shoot = True
-                    if event.key == pygame.K_q:
-                        grenade = True
-                    if event.key == pygame.K_w and player.alive:
-                        player.jump = True
-                        jump_fx.play()
-                    if event.key == pygame.K_ESCAPE:
-                        run = False
-                # keyboard button released
-                if event.type == pygame.KEYUP:
-                    if event.key == pygame.K_a:
-                        moving_left = False
-                    if event.key == pygame.K_d:
-                        moving_right = False
-                    if event.key == pygame.K_SPACE:
-                        shoot = False
-                    if event.key == pygame.K_q:
-                        grenade = False
-                        grenade_thrown = False
-
-            pygame.display.update()
-        pygame.quit()
+        manual_play()
     else:
-        save_manager = SaveFutureLearning(MODEL_PATH, EPSILON_PATH, EPISODE_PATH)
-        episode = save_manager.load_episode()
-        extract_state = ExtractGameState()
-        dummy_state_dict, dummy_state = extract_state.extract_state(player, world, enemy_group, exit_group)
-        state_dim = dummy_state.shape[0]
-        action_dim = len(GameActions)
-        agent = DQNAgent(state_dim, action_dim)
-        reward_ai = RewardAI()
-        reward_ai.reset_total_reward()
-        logger = TrainingLogger()
-        # Initialize visualizer with a filename
-        visualizer = TrainingVisualizer()
+        # Initialize agent with CNN
+        update()  # Ensure screen is rendered
+        pygame.display.update()
+        pygame.time.wait(100)  # Wait for 100 ms
 
-        # load manager
-        save_manager.load_model(agent.q_network, agent.target_network, agent)
-        agent.update_target_network()  # Sync target network with Q-network
+        dummy_state = image_ex.get_current_frame()
+        # state_shape = (dummy_state.shape[0], dummy_state.shape[1])  # (84, 84) for example Use 2D state shape (height, width)
+        agent = DQNAgent(dummy_state.shape, len(GameActions))
+        agent.model, agent.target_model = save_manager.load_model(agent.model, agent.target_model)
+        agent.epsilon = save_manager.load_epsilon()
+        agent.update_target_network()
+        reward_ai = RewardAI()
         iteration = 0
 
-
+        # player_x, player_y = player.rect.center
+        # player_spon_point = {
+        #     "x": player_x,
+        #     "y": player_y
+        # }
+        # print(f"Player Position: ({player_spon_point})")
+        hard_reset = False
         while run:
             clock.tick(FPS)
 
+            if reward_ai.calculate_total_reward() < -8000:
+                hard_reset = True
 
 
             if save_data:
-                player.prev_health = player.health
-
-                # Reset temporary counters BEFORE action
-                player.bullets_hit_this_frame = 0
-                player.moved_forward = False
+                # Capture previous state
+                prev_health = player.health
                 prev_ammo = player.ammo
                 prev_grenades = player.grenades
-                prev_enemy_count = len(enemy_group)  # Track enemies before action
+                prev_enemy_count = len(enemy_group)
+
+                current_state = image_ex.get_current_frame()
+                if current_state is not None:
+                    action_type, _, chosen_action, epsilon = agent.act(current_state)
+                    perform_action(GameActions(chosen_action))
+
+                    # Update game and capture next state
+                    update()
+
+                    next_state = image_ex.get_current_frame()
+
+                    # Calculate reward
+                    current_enemy_count = len(enemy_group)
+                    enemy_killed = current_enemy_count < prev_enemy_count
+                    died = not player.alive
+                    reached_exit = False #player.reached_exit()
+                    shot_fired = (GameActions(chosen_action) == GameActions.SHOOT)
+                    reward = reward_ai.calculate_reward(chosen_action, player, enemy_killed, died, reached_exit, shot_fired, prev_health, prev_ammo, prev_grenades, world)
+                    total_reward = reward_ai.calculate_total_reward()
+
+                    # Terminal state checks
+                    done = died or reached_exit
+
+                    print(f"Iteration: {iteration}, Type: {action_type}, Epsilon: {agent.epsilon:.4f}, "
+                          f"Action: {GameActions(chosen_action).name}, Reward: {reward:.2f}, "
+                          f"Total: {reward_ai.total_reward:.2f}, Health: {player.health}")
 
 
-                # Old State
-                state_dict, state = extract_state.extract_state(player, world, enemy_group, exit_group)
-                print(state_dict)
-                action_type, rand_values, chosen_action = agent.act(state)
-
-                # Detect if a shot was fired
-                shot_fired = (GameActions(chosen_action) == GameActions.SHOOT)
-
-                perform_action(GameActions(chosen_action))
-
-                # Update Game - this will modify the state
-                update()
-
-                # --- Check post-update values AFTER game updates ---
-                died = not player.alive
-                reached_exit = player.reached_exit()
-                health_gained = player.health > player.prev_health
-                ammo_gained = player.ammo > prev_ammo
-                grenades_gained = player.grenades > prev_grenades
-
-                # Detect if any enemy died
-                enemy_killed = len(enemy_group) < prev_enemy_count
-
-                # New State
-                next_state = extract_state.extract_state(player, world, enemy_group, exit_group)
-                reward = reward_ai.calculate_reward(state_dict, state, chosen_action, died, enemy_killed, shot_fired, health_gained, ammo_gained, grenades_gained, reached_exit)
-
-                # Terminal state checks
-                done = not player.alive or reached_exit
-
-                # print(f"Iteration: {iteration}, Type: {action_type}, Epsilon: {agent.epsilon:.4f}, Random: {rand_values}, "
-                #       f"Action: {GameActions(chosen_action).name}, Reward: {reward:.2f}, "
-                #       f"Total: {reward_ai.total_reward:.2f}, Health: {player.health}")
-
-                # Add to reward calculation
-                if DEBUG_SHOW_COLLISION_BOX:
-                    pygame.draw.line(screen, RED, player.rect.center,
-                                     (player.rect.centerx + 50 * player.direction,
-                                      player.rect.centery), 3)
-
-                # Rember
-                agent.remember(state, chosen_action, reward, next_state, done)
-                agent.replay(episode)
+                    # Store experience and train
+                    agent.remember(current_state, chosen_action, reward, next_state, done)
+                    agent.replay(32)  # Adjust batch size as needed
+                    # agent.decay_epsilon()
                 iteration += 1
 
-            # Calculate elapsed time
-            current_time = pygame.time.get_ticks()
-            elapsed_time = (current_time - level_start_time) // 1000  # Convert to seconds
-            if elapsed_time > 60:
-                done = True
-                save_data = True
-
             # Logging
-            if done and save_data:
+            if (hard_reset or done) and save_data:
                 # Update Log data
                 total_reward = reward_ai.calculate_total_reward()
                 logger.log(episode, total_reward, agent.epsilon)
-                save_manager.save_model(agent.q_network, agent, episode)
-                # save_manager.load_model(agent.q_network, agent.target_network, agent)
+                save_manager.save_model(agent.model, agent, episode)
 
                 reached_exit = player.reached_exit()
                 success = int(reached_exit)
-
 
                 # Calculate elapsed time
                 current_time = pygame.time.get_ticks()
@@ -471,7 +492,6 @@ def run_game():
                 progress_pct = max(0, min(100, progress_pct))  # Clamp between 0-100
 
 
-                print("total_reward", total_reward)
                 # Save all relevant metrics
                 visualizer.save_episode(
                     episode=episode,
@@ -482,13 +502,18 @@ def run_game():
                     time_taken=elapsed_time,
                     distance_traveled=progress_pct
                 )
-
+                print(f"total_reward: {total_reward}")
                 print(f"episode: {episode}")
+                print(f"epsilon: {epsilon}")
+
                 episode += 1
                 iteration = 0
                 save_data = False
+                hard_reset = False
+
                 reward_ai.reset_total_reward()
-                agent.decay_epsilon()  # Decay epsilon HERE (once per episode)
+                if episode % 5 == 0:
+                    agent.decay_epsilon()  # Decay epsilon HERE (once per episode)
 
             if not save_data:
                 reset_game(True)
@@ -498,9 +523,7 @@ def run_game():
                 # quit game
                 if event.type == pygame.QUIT:
                     run = False
-                # Only process input if the agent is not controlling
-                # if not save_data:
-                # keyboard presses
+                # Keyboard presses for player movement and actions
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_a:
                         moving_left = True
@@ -515,7 +538,7 @@ def run_game():
                         jump_fx.play()
                     if event.key == pygame.K_ESCAPE:
                         run = False
-                # keyboard button released
+                # Keyboard button released
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_a:
                         moving_left = False
@@ -529,22 +552,148 @@ def run_game():
 
             pygame.display.update()
         pygame.quit()
+        visualizer.plot_progress()
+        visualizer.plot_combined()
 
-        try:
-            visualizer.plot_progress()
-            visualizer.plot_combined()
+        df = visualizer.load_data()
+        print("\nTraining Statistics Summary:")
+        print(df.describe())
+
+        # Visualize the model structure
+        agent.visualize_model()
+        # Visualize the first convolutional layer
+        agent.visualize_weights(layer_index=0)
+        # You can also visualize the second and third layers
+        agent.visualize_weights(layer_index=1)
+        agent.visualize_weights(layer_index=2)
 
 
-            df = visualizer.load_data()
-            print("\nTraining Statistics Summary:")
-            print(df.describe())
-
-            # # Example filtered plot
-            # if len(df) > 2000:
-            #     filtered_df = df[df['episode'].between(1000, 2000)]
-            #     plt.figure(figsize=(12, 6))
-            #     sns.lineplot(data=filtered_df, x='episode', y='total_reward')
-            #     plt.title("Reward Progression (Episodes 1000-2000)")
-            #     plt.show()
-        except Exception as e:
-            print(f"Could not generate final plots: {e}")
+# def run_game():
+#     global run, start_game, world, life_line, next_life, player, health_bar, intro_fade, death_fade, episode, total_reward, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro, save_data, done
+#
+#     # Initialize the extractor
+#     save_manager = SaveFutureLearning(MODEL_PATH, EPSILON_PATH, EPISODE_PATH)
+#     episode = save_manager.load_episode()
+#     logger = TrainingLogger()
+#     visualizer = TrainingVisualizer()
+#     extract_state = ExtractGameState(int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.2))
+#     image_ex = ImageExtractorThread(screen, extract_state)
+#     image_ex.start()
+#
+#     # Initialize the agent
+#     update()
+#     pygame.display.update()
+#     pygame.time.wait(100)
+#     dummy_state = image_ex.get_current_frame()
+#     agent = DQNAgent(dummy_state.shape, len(GameActions))
+#     agent.model, agent.target_model = save_manager.load_model(agent.model, agent.target_model)
+#     agent.epsilon = save_manager.load_epsilon()
+#     agent.update_target_network()
+#     reward_ai = RewardAI()
+#     iteration = 0
+#     player_spon_point = {"x": player.rect.centerx, "y": player.rect.centery}
+#     life_line = 3
+#
+#     while run:
+#         clock.tick(FPS)
+#
+#         if save_data:
+#             # Capture previous state
+#             prev_health = player.health
+#             prev_ammo = player.ammo
+#             prev_grenades = player.grenades
+#             prev_enemy_count = len(enemy_group)
+#             current_state = image_ex.get_current_frame()
+#
+#             if current_state is not None:
+#                 action_type, _, chosen_action, epsilon = agent.act(current_state)
+#                 perform_action(GameActions(chosen_action))
+#                 update()
+#                 next_state = image_ex.get_current_frame()
+#
+#                 # Calculate reward
+#                 current_enemy_count = len(enemy_group)
+#                 enemy_killed = current_enemy_count < prev_enemy_count
+#                 died = not player.alive
+#                 shot_fired = (GameActions(chosen_action) == GameActions.SHOOT)
+#                 reward = reward_ai.calculate_reward(chosen_action, player, enemy_killed, died, False, shot_fired,
+#                                                     prev_health, prev_ammo, prev_grenades)
+#                 total_reward = reward_ai.calculate_total_reward()
+#                 done = died or player.reached_exit()
+#
+#                 # Store experience and train
+#                 agent.remember(current_state, chosen_action, reward, next_state, done)
+#                 agent.replay(32)
+#
+#                 # Log training metrics at episode end
+#                 if done:
+#                     logger.log(episode, total_reward, agent.epsilon)
+#                     visualizer.save_episode(
+#                         episode=episode,
+#                         total_reward=total_reward,
+#                         success=int(player.reached_exit()),
+#                         epsilon=agent.epsilon,
+#                         steps=iteration,
+#                         time_taken=(pygame.time.get_ticks() - level_start_time) // 1000,
+#                         distance_traveled=player.rect.centerx - player_spon_point["x"]
+#                     )
+#                     save_manager.save_model(agent.model, agent, episode)
+#                     agent.decay_epsilon()
+#                     episode += 1
+#                     save_data = False
+#                     reward_ai.reset_total_reward()
+#                     iteration = 0
+#                     print(f"Episode {episode} completed.")
+#
+#             iteration += 1
+#
+#         # Handle player life and reset logic
+#         if not save_data:
+#             life_line -= 1
+#             if life_line > 0:
+#                 player.rect.center = (player_spon_point["x"], player_spon_point["y"])
+#                 player.health = player.max_health
+#                 print(f"Respawning player. Life lines left: {life_line}")
+#             else:
+#                 life_line = 3
+#                 reward_ai.reset_total_reward()
+#                 reset_game(True)
+#                 print("Out of life lines. Starting a new episode.")
+#
+#         # Event Handling
+#         for event in pygame.event.get():
+#             if event.type == pygame.QUIT:
+#                 run = False
+#             if event.type == pygame.KEYDOWN:
+#                 if event.key == pygame.K_a:
+#                     moving_left = True
+#                 if event.key == pygame.K_d:
+#                     moving_right = True
+#                 if event.key == pygame.K_SPACE:
+#                     shoot = True
+#                 if event.key == pygame.K_q:
+#                     grenade = True
+#                 if event.key == pygame.K_w and player.alive:
+#                     player.jump = True
+#                     jump_fx.play()
+#                 if event.key == pygame.K_ESCAPE:
+#                     run = False
+#             if event.type == pygame.KEYUP:
+#                 if event.key == pygame.K_a:
+#                     moving_left = False
+#                 if event.key == pygame.K_d:
+#                     moving_right = False
+#                 if event.key == pygame.K_SPACE:
+#                     shoot = False
+#                 if event.key == pygame.K_q:
+#                     grenade = False
+#                     grenade_thrown = False
+#
+#         pygame.display.update()
+#
+#     pygame.quit()
+#     visualizer.plot_progress()
+#     visualizer.plot_combined()
+#     df = visualizer.load_data()
+#     print("\nTraining Statistics Summary:")
+#     print(df.describe())

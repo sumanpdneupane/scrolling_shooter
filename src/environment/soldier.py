@@ -8,16 +8,18 @@ from src.environment.equipments import Bullet
 
 
 class Soldier(pygame.sprite.Sprite):
-    def __init__(self, char_type, x, y, scale, speed, ammo, grenades):
+    def __init__(self, char_type, x, y, health, scale, speed, ammo, grenades):
         pygame.sprite.Sprite.__init__(self)
         self.alive = True
         self.char_type = char_type
         self.speed = speed
         self.ammo = ammo
+        self.max_ammo = ammo
         self.start_ammo = ammo
         self.shoot_cooldown = 0
         self.grenades = grenades
-        self.health = 100
+        self.max_grenades = grenades
+        self.health = health
         self.max_health = self.health
         self.direction = 1
         self.vel_y = 0
@@ -36,9 +38,10 @@ class Soldier(pygame.sprite.Sprite):
         self.idling_counter = 0
         self.prev_x = x  # Track previous position
         self.moved_forward = False
+        self.moved_backward = False
         self.bullets_hit_this_frame = 0  # Track successful hits
         # Add health tracking
-        self.prev_health = 100  # Initialize with max health
+        self.prev_health = health  # Initialize with max health
         self.velocity_history = deque(maxlen=10)  # Track last 10 frames
 
         # load all images for the players
@@ -69,7 +72,8 @@ class Soldier(pygame.sprite.Sprite):
         if self.shoot_cooldown > 0:
             self.shoot_cooldown -= 1
         # Store health state before updates
-        self.prev_health = self.health
+        if self.char_type == 'player':
+            self.prev_health = self.health
 
     def move(self, moving_left, moving_right, world):
         # reset movement variables
@@ -98,7 +102,7 @@ class Soldier(pygame.sprite.Sprite):
 
         # jump
         if self.jump == True and self.in_air == False:
-            self.vel_y = -12.375 #14
+            self.vel_y = -12.65 #14 .375
             self.vel_x = 3.5 * self.direction
             self.jump = False
             self.in_air = True
@@ -109,6 +113,11 @@ class Soldier(pygame.sprite.Sprite):
             self.vel_y
 
         dy += self.vel_y
+
+        # check if player is on the ground
+        if self.vel_y == 0:
+            self.vel_y = 0
+            self.in_air = False
 
 
         # check for collision
@@ -168,9 +177,13 @@ class Soldier(pygame.sprite.Sprite):
 
         # Update movement tracking
         if self.char_type == 'player':
-            self.moved_forward = (self.rect.x > self.prev_x and self.direction == 1) or \
-                                 (self.rect.x < self.prev_x and self.direction == -1)
+            self.moved_forward = (self.rect.x + 25> self.prev_x and self.direction == 1)
+
+            self.moved_backward = (self.rect.x - 5< self.prev_x and self.direction == -1)
+
         self.prev_x = self.rect.x
+
+
 
         return screen_scroll, level_complete
 
@@ -200,9 +213,44 @@ class Soldier(pygame.sprite.Sprite):
     def reached_exit(self):
         return any(self.rect.colliderect(exit.rect) for exit in exit_group)
 
-
     def walked_forward(self):
         return self.moved_forward  # Use the tracked movement state
+
+    def player_near_edge(self, world):
+        # Check if the player is near the edge
+        player_left_edge = self.rect.left - 10
+        player_right_edge = self.rect.right + 10
+        is_near_edge = True
+
+        # Check for tiles beneath the player's left and right edges
+        for tile in world.obstacle_list:
+            # Check for ground support on the left and right edges
+            if tile[1].colliderect(player_left_edge, self.rect.bottom + 5, 5, 5) or \
+                    tile[1].colliderect(player_right_edge, self.rect.bottom + 5, 5, 5):
+                is_near_edge = False
+                break
+        return  is_near_edge
+
+    def is_near_edge(self, world):
+        if world is None:
+            return False
+
+        # Check the tile directly under the player
+        player_bottom = self.rect.bottom
+        left_edge = self.rect.left - 5
+        right_edge = self.rect.right + 5
+
+        on_left_edge = not any(
+            tile[1].colliderect(left_edge, player_bottom, 1, 1) for tile in world.obstacle_list
+        )
+        on_right_edge = not any(
+            tile[1].colliderect(right_edge, player_bottom, 1, 1) for tile in world.obstacle_list
+        )
+
+        return on_left_edge or on_right_edge
+
+    def walked_backward(self):
+        return self.moved_backward
 
     def ai(self, player=None, world=None):
         # Add movement tracking for NPCs

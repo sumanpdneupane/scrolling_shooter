@@ -30,7 +30,7 @@ class Bullet(pygame.sprite.Sprite):
 		for enemy in enemy_group:
 			if pygame.sprite.spritecollide(enemy, bullet_group, False):
 				if enemy.alive:
-					enemy.health -= 25
+					enemy.health -= 50
 					self.kill()
 
 class Grenade(pygame.sprite.Sprite):
