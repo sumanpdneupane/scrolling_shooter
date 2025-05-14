@@ -1,6 +1,10 @@
+import math
 import os
 import random
 from collections import deque
+
+import numpy as np
+from pygame import Vector2
 
 # from src.environment.world import World
 from src.settings import *
@@ -64,16 +68,19 @@ class Soldier(pygame.sprite.Sprite):
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.last_x = self.rect.x
+        self.moved_one_tile = None
+        self.reach_exit = False
 
     def update(self):
-        self.update_animation()
-        self.check_alive()
-        # update cooldown
-        if self.shoot_cooldown > 0:
-            self.shoot_cooldown -= 1
-        # Store health state before updates
-        if self.char_type == 'player':
-            self.prev_health = self.health
+        with game_state_lock:  # Acquire lock before modifying shared state
+            self.update_animation()
+            self.check_alive()
+            # update cooldown
+            if self.shoot_cooldown > 0:
+                self.shoot_cooldown -= 1
+            # Store health state before updates
+            if self.char_type == 'player':
+                self.prev_health = self.health
 
     def move(self, moving_left, moving_right, world):
         # reset movement variables
@@ -178,12 +185,16 @@ class Soldier(pygame.sprite.Sprite):
         # Update movement tracking
         if self.char_type == 'player':
             self.moved_forward = (self.rect.x + 25> self.prev_x and self.direction == 1)
-
-            self.moved_backward = (self.rect.x - 5< self.prev_x and self.direction == -1)
+            self.moved_backward = (self.rect.x - 3< self.prev_x and self.direction == -1)
 
         self.prev_x = self.rect.x
 
-
+        # Final ground check to correct in_air state
+        self.in_air = True
+        for tile in world.obstacle_list:
+            if tile[1].colliderect(self.rect.x, self.rect.bottom + 1, self.width, 1):
+                self.in_air = False
+                break
 
         return screen_scroll, level_complete
 
@@ -205,16 +216,75 @@ class Soldier(pygame.sprite.Sprite):
                 self.bullets_hit_this_frame += 1
         return self.bullets_hit_this_frame > 0
 
+
+
+    def get_nearest_enemy(self, enemy_group, radius=100):
+        nearest_enemy = None
+        min_distance = float('inf')
+
+        for enemy in enemy_group:
+            distance = np.sqrt((self.rect.centerx - enemy.rect.centerx) ** 2 +
+                               (self.rect.centery - enemy.rect.centery) ** 2)
+            if distance < radius and distance < min_distance:
+                min_distance = distance
+                nearest_enemy = enemy
+
+        return nearest_enemy
+
     def fell_or_hit_water(self):
         in_water = pygame.sprite.spritecollide(self, water_group, False)
         fell_off = self.rect.bottom > SCREEN_HEIGHT
+        if in_water or fell_off:
+            self.alive = False
         return in_water or fell_off
+
+    def distance_to_exit(self):
+        player_center = self.rect.center
+        min_distance = float('inf')
+
+        for exit in exit_group:
+            exit_center = exit.rect.center
+            distance = abs(exit_center[0] - player_center[0]) + abs(exit_center[1] - player_center[1])
+            min_distance = min(min_distance, distance)
+
+        return min_distance
+
+    def exit_coordinates(self):
+        for exit in exit_group:
+            return exit.rect.center
+        return (0, 0)
 
     def reached_exit(self):
         return any(self.rect.colliderect(exit.rect) for exit in exit_group)
 
     def walked_forward(self):
         return self.moved_forward  # Use the tracked movement state
+
+    def has_moved_one_tile_directional(self,  tile_size=5):
+        delta = self.rect.x - self.prev_x
+        print("---------player speed: ", self.speed , delta, TILE_SIZE, tile_size)
+        if delta >= tile_size:
+            return 1  # right
+        elif delta <= -tile_size:
+            return -1  # left
+        else:
+            return 0  # stand
+
+    def can_move_one_tile(player, world, direction="right", tile_size=32):
+        if direction == "left":
+            target_x = player.rect.left - tile_size
+        elif direction == "right":
+            target_x = player.rect.right + tile_size - player.rect.width
+        else:
+            raise ValueError("Direction must be 'left' or 'right'.")
+
+        # Define a small box under the intended position to check for ground
+        check_rect = pygame.Rect(target_x, player.rect.bottom + 5, player.rect.width, 5)
+
+        for tile in world.obstacle_list:
+            if tile[1].colliderect(check_rect):
+                return True  # Safe to move (ground exists)
+        return False  # No ground, unsafe
 
     def player_near_edge(self, world):
         # Check if the player is near the edge
@@ -230,6 +300,27 @@ class Soldier(pygame.sprite.Sprite):
                 is_near_edge = False
                 break
         return  is_near_edge
+
+    def player_near_edge2(self, world):
+        # Small padding to check left and right edges
+        left_check_x = self.rect.left - 10
+        right_check_x = self.rect.right + 10
+        bottom_y = self.rect.bottom + 5  # Small buffer below the player
+
+        # Assume the player is near an edge
+        is_near_edge = True
+
+        # Check only nearby tiles for efficiency
+        for tile in world.obstacle_list:
+            tile_rect = tile[1]
+
+            # Check if there is ground support at the left or right side
+            if tile_rect.colliderect(left_check_x, bottom_y, 5, 5) or \
+                    tile_rect.colliderect(right_check_x, bottom_y, 5, 5):
+                is_near_edge = False
+                break
+
+        return is_near_edge
 
     def is_near_edge(self, world):
         if world is None:

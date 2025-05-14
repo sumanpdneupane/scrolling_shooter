@@ -1,3 +1,5 @@
+import threading
+
 import pygame
 import csv
 from src.utils import button
@@ -6,6 +8,8 @@ from src.utils import button
 #
 # mixer.init()
 # pygame.init()
+# Use a lock for synchronizing access to global variables
+game_state_lock = threading.Lock()
 
 DEBUG = False
 DEBUG_SHOW_COLLISION_BOX = False
@@ -31,7 +35,7 @@ MAX_LEVELS = 3
 GROUND_THRESHOLD = TILE_SIZE * 1.4
 screen_scroll = 0
 bg_scroll = 0
-level = 1
+level = 0
 start_game = False
 start_intro = False
 

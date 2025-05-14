@@ -4,7 +4,6 @@ import pygame
 import threading
 import time
 
-
 class GameActions(enum.IntEnum):
     MOVE_RIGHT = 0
     MOVE_LEFT = 1
@@ -20,24 +19,6 @@ class ExtractGameState:
     def __init__(self, width=84, height=84):
         self.width = width
         self.height = height
-
-    # def extract_image(self, screen):
-    #     """Efficiently captures and preprocesses the current game screen."""
-    #     # Capture screen as an array (width, height, 3)
-    #     img_array = pygame.surfarray.pixels3d(screen)
-    #
-    #     # Transpose to (height, width, 3)
-    #     img_array = np.transpose(img_array, (1, 0, 2))
-    #
-    #     # Convert to grayscale using NumPy (faster than OpenCV for this step)
-    #     gray_img = np.dot(img_array[..., :3], [0.2989, 0.587, 0.114]).astype(np.uint8)
-    #
-    #     # Resize to 84x84 (or specified size)
-    #     resized_img = cv2.resize(gray_img, (self.width, self.height), interpolation=cv2.INTER_AREA)
-    #
-    #     # Normalize and add channel dimension (84, 84, 1)
-    #     final_img = np.expand_dims(resized_img, axis=-1)
-    #     return final_img
 
     def extract_image(self, screen, save_path= None):
         img_array = pygame.surfarray.pixels3d(screen)
@@ -71,13 +52,9 @@ class ImageExtractorThread(threading.Thread):
             # Extract the game state from the screen copy
             frame = self.extract_state.extract_image(screen_copy)
 
-            # # Create the directory if it doesn't exist
-            # save_directory = "extract_image"
-            # os.makedirs(save_directory, exist_ok=True)
-            #
-            # # Save the image
-            # image_path = os.path.join(save_directory, f"frame_{self.iteration}.png")
-            # cv2.imwrite(image_path, frame)
+            #Save current frame
+            # save_manager = SaveFutureLearning("", "", "")
+            # save_manager.save_current_frame(frame, self.iteration)
 
             self.iteration += 1
             with self.lock:
@@ -88,7 +65,7 @@ class ImageExtractorThread(threading.Thread):
                 self.current_frame = frame
 
             # Reduce CPU usage
-            time.sleep(0.00001)
+            time.sleep(0.005)
 
     def get_current_frame(self):
         with self.lock:
