@@ -29,7 +29,6 @@ from src.ai_agent.agent import DQNAgent
 from src.ai_agent.reward import RewardAI
 from src.ai_agent.save_model_data import SaveFutureLearning
 from src.utils.logger import TrainingLogger
-import threading
 import pygame
 import time
 

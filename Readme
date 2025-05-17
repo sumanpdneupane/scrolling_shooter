@@ -10,9 +10,11 @@ hard -coded rules.
 ## Folder structure
 ```
 shooter_game/
+│── Game video.mov                      # Demo game video
 │── requirements.txt                    # pip installation dependencies
-│── main.py                             # Main game loop
-└── src                                 # Main game loop
+│── main.py                             # Entry point
+└── src                                 
+    │── game_entry.py                   # Main game loop
     │── settings.py                     # Game constants and settings
     │── ai_agent/
     │   ├── agent.py                    # AI agent
