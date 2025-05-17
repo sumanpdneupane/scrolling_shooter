@@ -95,6 +95,12 @@ def update_game_menu():
     draw_text('GRENADES: ', font, WHITE, 10, 60)
     screen.blit(grenade_img, (135, 65))
     draw_text(f' {player.grenades}', font, WHITE, 155, 60)
+    # show grenades with image and count
+    draw_text('COINS: ', font, WHITE, 10, 85)
+    coin_box_img2 = pygame.transform.scale(coin_box_img, (20, 20))
+    screen.blit(coin_box_img2, (90, 85))
+    draw_text(f' {player.coin}', font, WHITE, 125, 83)
+
 
     # Calculate elapsed time
     current_time = pygame.time.get_ticks()
@@ -152,7 +158,7 @@ def update_game_menu():
     if not DEBUG:
         draw_text(f'Episode: {episode}', font, WHITE, SCREEN_WIDTH - 480, 20)
         draw_text(f'Total Reward:{total_reward:.2f}', font, WHITE, SCREEN_WIDTH - 480, 40)
-        draw_text(f'Epsilon:{epsilon:.2f}', font, WHITE, SCREEN_WIDTH - 480, 60)
+        draw_text(f'Epsilon:{epsilon:.4f}', font, WHITE, SCREEN_WIDTH - 480, 60)
         draw_text(f'Action Type:{action_type}', font, WHITE, SCREEN_WIDTH - 480, 80)
         draw_text(f'Action:{GameActions(chosen_action).name}', font, WHITE, SCREEN_WIDTH - 480,100)
 
@@ -219,7 +225,7 @@ def update_player_action():
         # check if player has completed the level
         if level_complete:
             start_intro = True
-            level += 1
+            # level += 1
             bg_scroll = 0
             # world_data = reset_level()
             # if level <= MAX_LEVELS:
@@ -349,45 +355,45 @@ player_spon_point = {
 life_line = 3
 next_life = True
 
-def jump_logic():
-    global world
-    success = False
-    # Draw the empty tiles, adjusted for camera offset
-    empty_tiles = world.get_horizontal_empty_spaces(get_world_data(1))
-    cx, cy = world.get_player_tile_position(player.rect.centerx, player.rect.centery)
-    _, empty_positionx = world.is_player_tile_ahead_below_or_back_below_empty_space(cx, cy, get_world_data(1))
-    # Check if any empty tile is in the empty_positionx list
-    if len(empty_positionx):
-        for (tile_x, tile_y) in empty_tiles:
-            for (pos_x, pos_y) in empty_positionx:
-                if tile_x == pos_x and tile_y == pos_y:
-                    success = True
-                    break  # Exit the inner loop once a collision is found
-    # empty_tile_colors = {tile: (random.randint(50, 255), random.randint(50, 255), random.randint(50, 255)) for tile
-    #                      in
-    #                      empty_tiles}
-    # for (x, y) in empty_tiles:
-    #     # pygame.draw.rect(screen, empty_tile_colors[(x, y)], (x, y, TILE_SIZE_W, TILE_SIZE_H))
-    #     empty_tile = pygame.Surface((TILE_SIZE_W, TILE_SIZE_H))
-    #     empty_tile.fill(empty_tile_colors[(x, y)])
-    #     empty_tile.set_alpha(128)
-    #     screen.blit(empty_tile, (x, y))
-    # # pygame.draw.rect(screen, (255, 255, 255), (cx, cy, TILE_SIZE_W, TILE_SIZE_H))
-    # player_c = pygame.Surface((TILE_SIZE_W, TILE_SIZE_H))
-    # player_c.fill((255, 255, 255))
-    # player_c.set_alpha(128)
-    # screen.blit(player_c, (cx, cy))
-
-    # if empty_positionx != None:
-    #     for (x, y) in empty_positionx:
-    #         # Only draw tiles within the visible screen area
-    #         # pygame.draw.rect(screen, (0, 0, 0), (x, y, TILE_SIZE_W, TILE_SIZE_H))
-    #         pygame.draw.rect(screen, (0, 0, 0), (x, y, TILE_SIZE_W, TILE_SIZE_H))
-    #         empty_positionx_color = pygame.Surface((TILE_SIZE_W, TILE_SIZE_H))
-    #         empty_positionx_color.fill((255, 255, 255))
-    #         empty_positionx_color.set_alpha(128)
-    #         screen.blit(empty_positionx_color, (x, y))
-    return success, (cx, cy), empty_tiles, (empty_positionx)
+# def jump_logic():
+#     global world, player, level
+#     success = False
+#     # Draw the empty tiles, adjusted for camera offset
+#     empty_tiles = world.get_horizontal_empty_spaces(get_world_data(level))
+#     cx, cy = world.get_player_tile_position(player.rect.centerx, player.rect.centery)
+#     _, empty_positionx = world.is_player_tile_ahead_below_or_back_below_empty_space(cx, cy, get_world_data(1))
+#     # Check if any empty tile is in the empty_positionx list
+#     if len(empty_positionx):
+#         for (tile_x, tile_y) in empty_tiles:
+#             for (pos_x, pos_y) in empty_positionx:
+#                 if tile_x == pos_x and tile_y == pos_y:
+#                     success = True
+#                     break  # Exit the inner loop once a collision is found
+#     # empty_tile_colors = {tile: (random.randint(50, 255), random.randint(50, 255), random.randint(50, 255)) for tile
+#     #                      in
+#     #                      empty_tiles}
+#     # for (x, y) in empty_tiles:
+#     #     # pygame.draw.rect(screen, empty_tile_colors[(x, y)], (x, y, TILE_SIZE_W, TILE_SIZE_H))
+#     #     empty_tile = pygame.Surface((TILE_SIZE_W, TILE_SIZE_H))
+#     #     empty_tile.fill(empty_tile_colors[(x, y)])
+#     #     empty_tile.set_alpha(128)
+#     #     screen.blit(empty_tile, (x, y))
+#     # # pygame.draw.rect(screen, (255, 255, 255), (cx, cy, TILE_SIZE_W, TILE_SIZE_H))
+#     # player_c = pygame.Surface((TILE_SIZE_W, TILE_SIZE_H))
+#     # player_c.fill((255, 255, 255))
+#     # player_c.set_alpha(128)
+#     # screen.blit(player_c, (cx, cy))
+#
+#     # if empty_positionx != None:
+#     #     for (x, y) in empty_positionx:
+#     #         # Only draw tiles within the visible screen area
+#     #         # pygame.draw.rect(screen, (0, 0, 0), (x, y, TILE_SIZE_W, TILE_SIZE_H))
+#     #         pygame.draw.rect(screen, (0, 0, 0), (x, y, TILE_SIZE_W, TILE_SIZE_H))
+#     #         empty_positionx_color = pygame.Surface((TILE_SIZE_W, TILE_SIZE_H))
+#     #         empty_positionx_color.fill((255, 255, 255))
+#     #         empty_positionx_color.set_alpha(128)
+#     #         screen.blit(empty_positionx_color, (x, y))
+#     return success, (cx, cy), empty_tiles, (empty_positionx)
 
 def manual_play():
     global run, start_game, world, player, epsilon, health_bar, intro_fade, death_fade, shoot, grenade, level, moving_left, moving_right, bg_scroll, grenade_thrown, start_intro, save_data, done
@@ -442,75 +448,24 @@ def manual_play():
     pygame.quit()
 
 
-# def extract_additional_features():
-#     global player, enemy_group, world
-#     # Near Edge Detection (Assuming player x, y is top-left corner)
-#     near_edge = 1 if player.player_near_edge2(world) else 0
-#     move_ahead = player.walked_forward()
-#     alive = player.alive
-#
-#     player_jump = jump_logic()
-#     print(player_jump)
-#
-#     # Low Health
-#     low_health = 1 if player.health / player.max_health < 0.3 else 0
-#
-#     # Enemy Nearby (within a certain radius)
-#     # enemy_nearby = 1 if player.get_nearest_enemy(enemy_group) else 0
-#
-#     # # Falling Speed
-#     falling_speed = 1 if player.fell_or_hit_water() else 0
-#
-#     # Distance to Nearest Pit (Water)
-#     min_pit_distance = float('inf')
-#     for water in water_group:
-#         water_center_x, water_center_y = water.rect.centerx, water.rect.centery
-#         pit_distance = math.sqrt(
-#             (water_center_x - player.rect.x) ** 2 + (water_center_y - player.rect.y) ** 2)
-#         min_pit_distance = min(min_pit_distance, pit_distance)
-#
-#     # Convert the boolean to a binary value
-#     is_active = 1 if player_jump[0] else 0
-#
-#     # Convert the single coordinate to a 2-element array
-#     position = np.array(player_jump[1])
-#     empty_tiles = np.array(player_jump[2]) #[:10]
-#     single_tile = np.array(player_jump[3]) #[0]
-#
-#     print("single_tile: ", single_tile)
-#
-#     is_active_array = np.array([is_active], dtype=np.float32)
-#     position_array = np.array(position, dtype=np.float32)
-#     # Flatten empty tiles if not empty
-#     if len(empty_tiles) > 0:
-#         empty_tiles_array = np.array(empty_tiles, dtype=np.float32).flatten()
-#     else:
-#         empty_tiles_array = np.array([], dtype=np.float32)
-#
-#     # Flatten single tiles if not empty
-#     if len(single_tile) > 0:
-#         single_tile_array = np.array(empty_tiles, dtype=np.float32).flatten()
-#     else:
-#         single_tile_array = np.array([], dtype=np.float32)
-#
-#     # nn_input = np.concatenate([[is_active], position, empty_tiles.flatten(), single_tile])
-#     combined_features = np.concatenate([is_active_array, position_array, empty_tiles_array, single_tile_array])
-#     nn_input_tensor = torch.tensor(combined_features, dtype=torch.float32)
-#
-#     # Print for Debugging
-#     # print(f"move_ahead: {move_ahead}, alive: {alive}, near_edge: {near_edge}, "
-#     #       f"low_health: {low_health}, falling_speed: {falling_speed}, "
-#     #       f"min_pit_distance: {min_pit_distance:.2f}")
-#
-#     # print(f"move_ahead:{move_ahead} near_edge: {near_edge}, low_health: {low_health}, "
-#     #       f", falling_speed: {falling_speed}")
-#
-#     # Combine all the features into a vector
-#     # Flatten nn_input_tensor if it's not already 1D
-#     features = [move_ahead, alive, near_edge, low_health, falling_speed]
-#     nn_input_flat = nn_input_tensor.numpy().flatten()
-#     combined_features = np.concatenate([features, nn_input_flat])
-#     return np.array([move_ahead, alive, near_edge, low_health, falling_speed])
+def extract_additional_features():
+    global enemy_group, world, player
+    # Near Edge Detection (Assuming player x, y is top-left corner)
+    near_edge = 1 if player.player_near_edge2(world) else 0
+    move_ahead = player.walked_forward()
+    alive = player.alive
+
+    # Low Health
+    low_health = 1 if player.health / player.max_health < 0.3 else 0
+
+    # Distance to Nearest Enemy
+    min_enemy_distance = float('inf')
+    for enemy in enemy_group:
+        enemy_center_x, enemy_center_y = enemy.rect.centerx, enemy.rect.centery
+        enemy_distance = math.sqrt(
+            (enemy_center_x - player.rect.centerx) ** 2 + (enemy_center_y - player.rect.centery) ** 2)
+        min_enemy_distance = min(min_enemy_distance, enemy_distance)
+    return np.array([move_ahead, alive, near_edge, low_health, min_enemy_distance])
 
 # def extract_additional_features():
 #     global player, enemy_group, world
@@ -543,74 +498,76 @@ def manual_play():
 #
 #     # Combine all the features into a vector
 #     return np.array([move_ahead, alive, near_edge, low_health, falling_speed, distance_to_exit])
-
-
-def extract_additional_features(player_jump):
-    global player, enemy_group, world
-    # Near Edge Detection (Assuming player x, y is top-left corner)
-    near_edge = 1 if player.player_near_edge2(world) else 0
-    move_ahead = player.walked_forward()
-    alive = player.alive
-
-    # Low Health
-    low_health = 1 if player.health / player.max_health < 0.3 else 0
-
-    # Enemy Nearby (within a certain radius)
-    # enemy_nearby = 1 if player.get_nearest_enemy(enemy_group) else 0
-
-    # # Falling Speed
-    falling_speed = 1 if player.fell_or_hit_water() else 0
-
-    # Distance to Nearest Pit (Water)
-    min_pit_distance = float('inf')
-    for water in water_group:
-        water_center_x, water_center_y = water.rect.centerx, water.rect.centery
-        pit_distance = math.sqrt(
-            (water_center_x - player.rect.x) ** 2 + (water_center_y - player.rect.y) ** 2)
-        min_pit_distance = min(min_pit_distance, pit_distance)
-
-    # Convert the boolean to a binary value
-    is_active = 1 if player_jump[0] else 0
-
-    # Convert the single coordinate to a 2-element array
-    position = np.array(player_jump[1])
-    # empty_tiles = np.array(player_jump[2]) #[:10]
-    single_tile = np.array(player_jump[3]) #[0]
-
-    # print("single_tile: ", single_tile)
-
-    is_active_array = np.array([is_active], dtype=np.float32)
-    position_array = np.array(position, dtype=np.float32)
-    # Flatten empty tiles if not empty
-    # if len(empty_tiles) > 0:
-    #     empty_tiles_array = np.array(empty_tiles, dtype=np.float32).flatten()
-    # else:
-    #     empty_tiles_array = np.array([], dtype=np.float32)
-
-    # Flatten single tiles if not empty
-    # if len(single_tile) > 0:
-    #     single_tile_array = np.array(single_tile, dtype=np.float32).flatten()
-    # else:
-    #     single_tile_array = np.array([], dtype=np.float32)
-
-    # nn_input = np.concatenate([[is_active], position, empty_tiles.flatten(), single_tile])
-    combined_features = np.concatenate([is_active_array, position_array])
-    nn_input_tensor = torch.tensor(combined_features, dtype=torch.float32)
-
-    # Print for Debugging
-    # print(f"move_ahead: {move_ahead}, alive: {alive}, near_edge: {near_edge}, "
-    #       f"low_health: {low_health}, falling_speed: {falling_speed}, "
-    #       f"min_pit_distance: {min_pit_distance:.2f}")
-
-    # print(f"move_ahead:{move_ahead} near_edge: {near_edge}, low_health: {low_health}, "
-    #       f", falling_speed: {falling_speed}")
-
-    # Combine all the features into a vector
-    # Flatten nn_input_tensor if it's not already 1D
-    features = np.array([move_ahead, alive, near_edge, low_health, falling_speed])
-    nn_input_flat = nn_input_tensor.numpy().flatten()
-    combined_features = np.concatenate([features, nn_input_flat])
-    return combined_features
+#
+#
+# def extract_additional_features(player_jump):
+#     global player, enemy_group, world
+#     # Near Edge Detection (Assuming player x, y is top-left corner)
+#     near_edge = 1 if player.player_near_edge2(world) else 0
+#     move_ahead = player.walked_forward()
+#     alive = player.alive
+#
+#     # Low Health
+#     low_health = 1 if player.health / player.max_health < 0.3 else 0
+#
+#     # Enemy Nearby (within a certain radius)
+#     # enemy_nearby = 1 if player.get_nearest_enemy(enemy_group) else 0
+#
+#     # # Falling Speed
+#     falling_speed = 1 if player.fell_or_hit_water() else 0
+#
+#     # Distance to Nearest Pit (Water)
+#     min_pit_distance = float('inf')
+#     for water in water_group:
+#         water_center_x, water_center_y = water.rect.centerx, water.rect.centery
+#         pit_distance = math.sqrt(
+#             (water_center_x - player.rect.x) ** 2 + (water_center_y - player.rect.y) ** 2)
+#         min_pit_distance = min(min_pit_distance, pit_distance)
+#
+#     if player_jump is not None:
+#
+#         # Convert the boolean to a binary value
+#         is_active = 1 if player_jump[0] else 0
+#
+#         # Convert the single coordinate to a 2-element array
+#         position = np.array(player_jump[1])
+#         # empty_tiles = np.array(player_jump[2]) #[:10]
+#         single_tile = np.array(player_jump[3]) #[0]
+#
+#         # print("single_tile: ", single_tile)
+#
+#         is_active_array = np.array([is_active], dtype=np.float32)
+#         position_array = np.array(position, dtype=np.float32)
+#         # Flatten empty tiles if not empty
+#         # if len(empty_tiles) > 0:
+#         #     empty_tiles_array = np.array(empty_tiles, dtype=np.float32).flatten()
+#         # else:
+#         #     empty_tiles_array = np.array([], dtype=np.float32)
+#
+#         # Flatten single tiles if not empty
+#         # if len(single_tile) > 0:
+#         #     single_tile_array = np.array(single_tile, dtype=np.float32).flatten()
+#         # else:
+#         #     single_tile_array = np.array([], dtype=np.float32)
+#
+#         # nn_input = np.concatenate([[is_active], position, empty_tiles.flatten(), single_tile])
+#         combined_features = np.concatenate([is_active_array, position_array])
+#         nn_input_tensor = torch.tensor(combined_features, dtype=torch.float32)
+#
+#         # Print for Debugging
+#         # print(f"move_ahead: {move_ahead}, alive: {alive}, near_edge: {near_edge}, "
+#         #       f"low_health: {low_health}, falling_speed: {falling_speed}, "
+#         #       f"min_pit_distance: {min_pit_distance:.2f}")
+#
+#         # print(f"move_ahead:{move_ahead} near_edge: {near_edge}, low_health: {low_health}, "
+#         #       f", falling_speed: {falling_speed}")
+#
+#         # Combine all the features into a vector
+#         # Flatten nn_input_tensor if it's not already 1D
+#         features = np.array([move_ahead, alive, near_edge, low_health, falling_speed])
+#         nn_input_flat = nn_input_tensor.numpy().flatten()
+#     combined_features = np.concatenate([features, nn_input_flat])
+#     return combined_features
 
 def render_diagonal_coordinates(screen):
     global world
@@ -657,14 +614,15 @@ def run_game():
         # Initialize agent with CNN
         update()  # Ensure screen is rendered
         pygame.display.update()
-        pygame.time.wait(100)  # Wait for 100 ms
-        extra_features_dim = len(extract_additional_features(jump_logic()))
+        pygame.time.wait(500)  # Wait for 100 ms
 
+        #AI starts
+        extra_features = extract_additional_features()
+        extra_features_dim = len(extra_features)
         dummy_state = image_ex.get_current_frame()
-
         agent = DQNAgent(dummy_state.shape, extra_features_dim, len(GameActions))
         agent.q_network, agent.target_network = save_manager.load_model(agent.q_network, agent.target_network)
-        agent.epsilon = save_manager.load_epsilon() if save_manager.load_epsilon() else 1.0
+        agent.epsilon = save_manager.load_epsilon() if save_manager.load_epsilon() else EPSILION
         episode = save_manager.load_episode()
         agent.update_target_network()
         reward_ai = RewardAI()
@@ -690,25 +648,32 @@ def run_game():
             if save_data:
                 current_state = image_ex.get_current_frame()
                 if current_state is not None:
-                    pre_allow_jump = jump_logic()
-                    additional_features = extract_additional_features(pre_allow_jump)
-                    # collide = world.check_ahead_collision(player.rect)
-                    action_type, _, chosen_action, epsilon = agent.act(current_state, additional_features, pre_allow_jump[1], pre_allow_jump[0])
-
-                    # if not world.raycast_for_gap(player):
-                    #     chosen_action = 3
-
+                    additional_features = extract_additional_features()
+                    action_type, _, chosen_action, epsilon = agent.act(current_state, additional_features)
                     perform_action(GameActions(chosen_action))
+
+                    prev_coin = player.coin
+                    prev_health = player.health
 
                     # Update game and capture next state
                     update()
-                    allow_jump = jump_logic()
 
                     if not world.raycast_for_gap(player):
                         print("here")
 
                     next_state = image_ex.get_current_frame()
-                    next_additional_features = extract_additional_features(allow_jump)
+                    next_additional_features = extract_additional_features()
+
+                    curr_coin = player.coin
+                    has_gained_coin = False
+                    if (curr_coin - prev_coin) > 0:
+                        has_gained_coin = True
+
+                    curr_health = player.health
+                    has_gained_health = False
+                    if (curr_health - prev_health) > 0:
+                        has_gained_health = True
+
 
                     # Calculate reward
                     died = not player.alive
@@ -716,10 +681,9 @@ def run_game():
                     # Terminal state checks
                     done = died or reached_exit or player.fell_or_hit_water()
 
-                    reward = reward_ai.calculate_reward(chosen_action=chosen_action, player=player, world=world, died=died, reached_exit=reached_exit, enemy_group=enemy_group, allow_jump=allow_jump[0])
-                    agent.save_reward(reward, chosen_action, allow_jump[1])
+                    reward = reward_ai.calculate_reward(chosen_action=chosen_action, player=player, has_gained_coin=has_gained_coin,has_gained_health=has_gained_health, died=died, reached_exit=reached_exit, enemy_group=enemy_group, bullet_group=bullet_group)
+                    agent.save_reward(reward, chosen_action)
                     total_reward = reward_ai.calculate_total_reward()
-
 
 
                     print(f"Iteration: {iteration}, Type: {action_type}, Epsilon: {agent.epsilon:.4f}, "
@@ -729,11 +693,7 @@ def run_game():
 
                     # Store experience and train
                     agent.remember(current_state, additional_features, chosen_action, reward, next_state, next_additional_features, done)
-                    agent.update_epsilon()
-                    # if died or player.fell_or_hit_water():
-                        # agent.past_death_list()
-                        # agent.rewards_buffer = deque(maxlen=50)
-
+                    # agent.update_epsilon()
                 iteration += 1
 
             # Logging
@@ -773,8 +733,7 @@ def run_game():
 
                 agent.replay()
                 reward_ai = RewardAI()
-                agent.update_epsilon(rate= 2)
-                # print(agent.death_positions)
+                agent.update_epsilon()
 
                 episode += 1
                 iteration = 0
@@ -827,322 +786,7 @@ def run_game():
         print("\nTraining Statistics Summary:")
         print(df.describe())
 
-        # # Visualize the model structure
-        # agent.visualize_model()
-        # # Visualize the first convolutional layer
-        # agent.visualize_weights(layer_index=0)
-        # # You can also visualize the second and third layers
-        # agent.visualize_weights(layer_index=1)
-        # agent.visualize_weights(layer_index=2)
 
-
-
-# --- Setup AI and game dependencies (pseudo-setup) ---
-# These are assumed to be defined elsewhere
-# screen, player, agent, GameActions, etc.
-
-# def handle_events():
-#     global run, moving_left, moving_right, shoot, grenade, grenade_thrown
-#     for event in pygame.event.get():
-#         if event.type == pygame.QUIT:
-#             run = False
-#         if event.type == pygame.KEYDOWN:
-#             if event.key == pygame.K_a:
-#                 moving_left = True
-#             if event.key == pygame.K_d:
-#                 moving_right = True
-#             if event.key == pygame.K_SPACE:
-#                 shoot = True
-#             if event.key == pygame.K_q:
-#                 grenade = True
-#             if event.key == pygame.K_w and player.alive:
-#                 player.jump = True
-#                 jump_fx.play()
-#             if event.key == pygame.K_ESCAPE:
-#                 run = False
-#         if event.type == pygame.KEYUP:
-#             if event.key == pygame.K_a:
-#                 moving_left = False
-#             if event.key == pygame.K_d:
-#                 moving_right = False
-#             if event.key == pygame.K_SPACE:
-#                 shoot = False
-#             if event.key == pygame.K_q:
-#                 grenade = False
-#                 grenade_thrown = False
-#
-# # --- Game Loop Thread ---
-# def game_loop():
-#     global run, save_data
-#     clock = pygame.time.Clock()
-#     while run:
-#         # Event Handling
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT:
-#                 run = False
-#
-#         # Game updates (rendering, etc.) should also happen here in the main thread
-#         update()
-#         pygame.display.update()
-#
-#         if not save_data:
-#             reset_game(True)
-#
-#         # Sleep for a small duration to prevent high CPU usage
-#         clock.tick(FPS)  # Limit FPS to reduce CPU usage
-#     pygame.quit()
-#
-# def ai_loop():
-#     global run, done, save_data, total_reward, episode, player, enemy_group, grenade, grenade_thrown, epsilon
-#
-#     save_manager = SaveFutureLearning(MODEL_PATH, EPSILON_PATH, EPISODE_PATH)
-#     logger = TrainingLogger()
-#     visualizer = TrainingVisualizer()
-#     extract_state = ExtractGameState(int(SCREEN_WIDTH * 0.4), int(SCREEN_HEIGHT * 0.4))
-#     image_ex = ImageExtractorThread(screen, extract_state)
-#     image_ex.start()
-#
-#     dummy_state = None
-#     while dummy_state is None and run:
-#         dummy_state = image_ex.get_current_frame()
-#         time.sleep(0.1)
-#
-#     print(dummy_state.shape)
-#     extra_features_dim = 4
-#     agent = DQNAgent(dummy_state.shape, extra_features_dim, len(GameActions))
-#     agent.q_network, agent.target_network = save_manager.load_model(agent.q_network, agent.target_network)
-#     agent.epsilon = save_manager.load_epsilon() if save_manager.load_epsilon() else 1.0
-#     episode = save_manager.load_episode()
-#     agent.update_target_network()
-#     reward_ai = RewardAI()
-#
-#     iteration = 0
-#
-#     while run:
-#         print("[AI] Processing AI logic")
-#
-#         if save_data:
-#             current_state = image_ex.get_current_frame()
-#             save_manager.save_current_frame(current_state, iteration)
-#
-#             if current_state is not None:
-#                 additional_features = extract_additional_features()
-#                 action_type, _, chosen_action, epsilon = agent.act(current_state, additional_features)
-#                 perform_action(GameActions(chosen_action))
-#
-#                 update()  # Apply action to game state
-#
-#                 next_state = image_ex.get_current_frame()
-#                 next_features = extract_additional_features()
-#
-#                 # Synchronize shared state access
-#                 died = not player.is_alive()
-#                 reached_exit = player.reached_exit()
-#                 one_tile = player.has_moved_one_tile_directional() == 1
-#
-#
-#                 reward = reward_ai.calculate_reward(
-#                     chosen_action, player, world, enemy_group
-#                 )
-#                 total_reward = reward_ai.calculate_total_reward()
-#                 done = died or reached_exit
-#
-#
-#                 print(f"Iteration: {iteration}, Type: {action_type}, Epsilon: {agent.epsilon:.4f}, "
-#                       f"Action: {GameActions(chosen_action).name}, Reward: {reward:.2f}, "
-#                       f"Total: {reward_ai.total_reward:.2f}, Health: {player.health}")
-#                 print(f"[DEBUG] done: {done}, right: {one_tile}")
-#
-#
-#                 agent.remember(current_state, additional_features, chosen_action, reward, next_state, next_features, done)
-#                 agent.update_epsilon()
-#                 iteration += 1
-#             time.sleep(0.02)
-#
-#         if done and save_data:
-#             time.sleep(2)
-#             with game_state_lock:
-#                 print("--------------------------done and save_data")
-#
-#                 logger.log(episode, total_reward, agent.epsilon)
-#                 save_manager.save_model(agent.q_network, agent, episode)
-#
-#                 success = int(player.reached_exit()) if hasattr(player, "reached_exit") else 0
-#                 current_time = pygame.time.get_ticks()
-#                 elapsed_time = (current_time - level_start_time) // 1000
-#
-#                 max_distance = exit_x - start_x
-#                 current_progress = player.rect.x - start_x
-#                 progress_pct = (current_progress / max_distance) * 100 if max_distance > 0 else 0
-#                 progress_pct = max(0, min(100, progress_pct))
-#
-#                 visualizer.save_episode(
-#                     episode=episode,
-#                     total_reward=total_reward,
-#                     success=success,
-#                     epsilon=agent.epsilon,
-#                     steps=iteration,
-#                     time_taken=elapsed_time,
-#                     distance_traveled=progress_pct
-#                 )
-#
-#                 print(f"[Episode {episode}] Reward: {total_reward}, Epsilon: {epsilon}")
-#
-#                 episode += 1
-#                 reward_ai = RewardAI()
-#                 agent.replay()
-#                 save_data = False
-#                 iteration = 0
-#                 time.sleep(4)
-#
-#         time.sleep(0.05)
-#
-#     visualizer.plot_progress()
-#     visualizer.plot_combined()
-#     df = visualizer.load_data()
-#     print("\nTraining Statistics Summary:")
-#     print(df.describe())
-#
-# def run_game():
-#     """Main entry point for the game."""
-#     global run
-#     run = True
-#
-#     # Start the AI loop in a separate background thread
-#     ai_thread = threading.Thread(target=ai_loop, daemon=True)
-#     ai_thread.start()
-#
-#     print("[INFO] Starting main game loop...")
-#     game_loop()  # This runs in the main thread
-#
-#     print("[INFO] Waiting for AI thread to finish...")
-#     ai_thread.join()  # Ensure AI thread finishes after the main game loop
-#     print("[INFO] Game and AI threads have finished.")
-
-# # --- AI Loop Thread ---
-# def ai_loop():
-#     global run, done, save_data, total_reward, episode, player, enemy_group, grenade, grenade_thrown
-#
-#     save_manager = SaveFutureLearning(MODEL_PATH, EPSILON_PATH, EPISODE_PATH)
-#     logger = TrainingLogger()
-#     visualizer = TrainingVisualizer()
-#     extract_state = ExtractGameState(int(SCREEN_WIDTH * 0.4), int(SCREEN_HEIGHT * 0.4))
-#     image_ex = ImageExtractorThread(screen, extract_state)
-#     image_ex.start()
-#
-#     # dummy_state = image_ex.get_current_frame()
-#     # Wait until a non-None frame is available
-#     dummy_state = None
-#     while dummy_state is None and run:
-#         dummy_state = image_ex.get_current_frame()
-#         time.sleep(0.1)
-#
-#     print(dummy_state.shape)
-#     extra_features_dim = 4
-#     agent = DQNAgent(dummy_state.shape, extra_features_dim, len(GameActions))
-#     agent.q_network, agent.target_network = save_manager.load_model(agent.q_network, agent.target_network)
-#     agent.epsilon = save_manager.load_epsilon() if save_manager.load_epsilon() else 1.0
-#     episode = save_manager.load_episode()
-#     agent.update_target_network()
-#     reward_ai = RewardAI()
-#
-#     iteration = 0
-#
-#     while run:
-#         print("[AI] Processing AI logic")
-#         time.sleep(0.01)
-#         with game_state_lock:
-#             if save_data:
-#                 prev_health = player.health
-#                 prev_ammo = player.ammo
-#                 prev_grenades = player.grenades
-#                 prev_enemy_count = len(enemy_group)
-#
-#                 current_state = image_ex.get_current_frame()
-#                 save_manager.save_current_frame(current_state, iteration)
-#                 if current_state is not None:
-#                     additional_features = extract_additional_features()
-#                     action_type, _, chosen_action, epsilon = agent.act(current_state, additional_features)
-#                     perform_action(GameActions(chosen_action))
-#
-#                     update()  # Update game state
-#                     next_state = image_ex.get_current_frame()
-#                     next_features = extract_additional_features()
-#
-#                     # Reward and transition
-#                     current_enemy_count = len(enemy_group)
-#                     enemy_killed = current_enemy_count < prev_enemy_count
-#
-#                     died = not player.alive
-#                     reached_exit = player.reached_exit() if hasattr(player, "reached_exit") else False
-#
-#                     shot_fired = GameActions(chosen_action) == GameActions.SHOOT
-#                     reward = reward_ai.calculate_reward(chosen_action, player, enemy_killed, died, reached_exit, shot_fired, prev_health, prev_ammo, prev_grenades, world, enemy_group)
-#                     total_reward = reward_ai.calculate_total_reward()
-#                     done = died or reached_exit
-#
-#                     print(f"Iteration: {iteration}, Type: {action_type}, Epsilon: {agent.epsilon:.4f}, "
-#                           f"Action: {GameActions(chosen_action).name}, Reward: {reward:.2f}, "
-#                           f"Total: {reward_ai.total_reward:.2f}, Health: {player.health}")
-#                     print(f"[DEBUG] died: {died}, reached_exit: {reached_exit}, done: {done}")
-#
-#                     agent.remember(current_state, additional_features, chosen_action, reward, next_state, next_features, done)
-#                     # agent.replay()
-#                     # save_manager.save_model(agent.q_network, agent, episode)
-#                     agent.update_epsilon()
-#                     iteration += 1
-#                     time.sleep(0.05)
-#
-#             if done and save_data:
-#                 time.sleep(2)
-#                 print("--------------------------done and save_data")
-#
-#                 logger.log(episode, total_reward, agent.epsilon)
-#                 save_manager.save_model(agent.q_network, agent, episode)
-#                 # save_manager.save_model(agent.model, agent, episode)
-#
-#                 success = int(player.reached_exit()) if hasattr(player, "reached_exit") else 0
-#                 current_time = pygame.time.get_ticks()
-#                 elapsed_time = (current_time - level_start_time) // 1000
-#
-#                 max_distance = exit_x - start_x
-#                 current_progress = player.rect.x - start_x
-#                 progress_pct = (current_progress / max_distance) * 100 if max_distance > 0 else 0
-#                 progress_pct = max(0, min(100, progress_pct))
-#
-#                 visualizer.save_episode(
-#                     episode=episode,
-#                     total_reward=total_reward,
-#                     success=success,
-#                     epsilon=agent.epsilon,
-#                     steps=iteration,
-#                     time_taken=elapsed_time,
-#                     distance_traveled=progress_pct
-#                 )
-#
-#                 print(f"[Episode {episode}] Reward: {total_reward}, Epsilon: {epsilon}")
-#
-#                 episode += 1
-#                 reward_ai = RewardAI()
-#                 agent.replay()
-#                 # agent.update_epsilon(rate=2)
-#                 save_data = False
-#                 iteration = 0
-#                 time.sleep(4)
-#
-#         # if not save_data:
-#         #     with game_state_lock:
-#         #         reset_game(True)
-#
-#         time.sleep(0.05)
-#
-#     visualizer.plot_progress()
-#     visualizer.plot_combined()
-#     df = visualizer.load_data()
-#     print("\nTraining Statistics Summary:")
-#     print(df.describe())
-
-# --- Main Entry ---
 
 
 

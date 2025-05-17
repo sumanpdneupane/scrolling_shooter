@@ -15,6 +15,7 @@ class Soldier(pygame.sprite.Sprite):
     def __init__(self, char_type, x, y, health, scale, speed, ammo, grenades):
         pygame.sprite.Sprite.__init__(self)
         self.alive = True
+        self.coin = 0
         self.char_type = char_type
         self.speed = speed
         self.ammo = ammo
@@ -72,15 +73,14 @@ class Soldier(pygame.sprite.Sprite):
         self.reach_exit = False
 
     def update(self):
-        with game_state_lock:  # Acquire lock before modifying shared state
-            self.update_animation()
-            self.check_alive()
-            # update cooldown
-            if self.shoot_cooldown > 0:
-                self.shoot_cooldown -= 1
-            # Store health state before updates
-            if self.char_type == 'player':
-                self.prev_health = self.health
+        self.update_animation()
+        self.check_alive()
+        # update cooldown
+        if self.shoot_cooldown > 0:
+            self.shoot_cooldown -= 1
+        # Store health state before updates
+        if self.char_type == 'player':
+            self.prev_health = self.health
 
     def move(self, moving_left, moving_right, world):
         # reset movement variables

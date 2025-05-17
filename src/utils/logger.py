@@ -1,7 +1,4 @@
 import os
-from pathlib import Path
-
-from matplotlib import pyplot as plt
 from src.settings import *
 
 # ----------------------------- LOGGER ----------------------------- #

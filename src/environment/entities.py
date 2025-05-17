@@ -35,6 +35,8 @@ class ItemBox(pygame.sprite.Sprite):
                 player.grenades += 3
                 if player.grenades > player.max_grenades:
                     player.grenades = player.max_grenades
+            elif self.item_type == 'Coin':
+                player.coin += 5
             # delete the item box
             self.kill()
 

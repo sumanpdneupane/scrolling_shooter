@@ -1,21 +1,14 @@
-import threading
-
 import pygame
 import csv
 from src.utils import button
 
-# from pygame import mixer
-#
-# mixer.init()
-# pygame.init()
-# Use a lock for synchronizing access to global variables
-game_state_lock = threading.Lock()
 
 DEBUG = False
 DEBUG_SHOW_COLLISION_BOX = False
 DEBUG_ENABLE_SOUND = False
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = int(SCREEN_WIDTH * 0.8)
+EPSILION = 0.5
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Shooter')
@@ -35,7 +28,7 @@ MAX_LEVELS = 3
 GROUND_THRESHOLD = TILE_SIZE * 1.4
 screen_scroll = 0
 bg_scroll = 0
-level = 0
+level = 1
 start_game = False
 start_intro = False
 
@@ -96,11 +89,15 @@ ammo_box_img = pygame.image.load('src/assets/images/icons/ammo_box.png').convert
 ammo_box_img = pygame.transform.scale(ammo_box_img, (int(ammo_box_img.get_width() * 1.5), int(ammo_box_img.get_height() * 1.5)))
 grenade_box_img = pygame.image.load('src/assets/images/icons/grenade_box.png').convert_alpha()
 grenade_box_img = pygame.transform.scale(grenade_box_img, (int(grenade_box_img.get_width() * 1.5), int(grenade_box_img.get_height() * 1.5)))
+coin_box_img = pygame.image.load(f'src/assets/images/Tile/11.png')
+coin_box_img = pygame.transform.scale(coin_box_img, (TILE_SIZE, TILE_SIZE))
+
 
 item_boxes = {
 	'Health'	: health_box_img,
 	'Ammo'		: ammo_box_img,
-	'Grenade'	: grenade_box_img
+	'Grenade'	: grenade_box_img,
+	'Coin'	    : coin_box_img
 }
 
 def clip_image(img, size_x, size_y):
@@ -186,6 +183,7 @@ def set_screen_scroll(screen_scroll):
     _screen_scroll = screen_scroll
 
 def get_world_data(level):
+	level=1
 	# create empty tile list
 	world_data = []
 	for row in range(ROWS):

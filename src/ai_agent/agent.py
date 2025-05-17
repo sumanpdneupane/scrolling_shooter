@@ -7,7 +7,6 @@ import numpy as np
 import random
 from collections import deque
 
-from src.ai_agent.agent_state_and_action import GameActions
 
 
 class DualInputQNetwork:
@@ -56,8 +55,8 @@ class DualInputQNetwork:
 
         # Build and compile the model
         model = Model(inputs=[image_input, extra_input], outputs=output)
-        # optimizer = Adam(clipvalue=1.0)  # Clip gradients to prevent large updates
-        model.compile(loss='mse')
+        optimizer = Adam(clipvalue=1.0)  # Clip gradients to prevent large updates
+        model.compile(loss='mse', optimizer=optimizer)
 
         return model
 
@@ -297,7 +296,6 @@ class DQNAgent:
         self.epsilon = epsilon_start
         self.epsilon_min = epsilon_min
         self.epsilon_decay = epsilon_decay
-        self.epsilon_decay_steps = 50000
 
         self.learn_step_counter = 0
         self.target_update_freq = target_update_freq
@@ -350,7 +348,7 @@ class DQNAgent:
         e_x = np.exp(q_values - np.max(q_values))  # stability
         return e_x / e_x.sum()
 
-    def act(self, state_img, extra_features, player_position, allow_jump, temperature=0.3, mode="hardmax"):
+    def act(self, state_img, extra_features, temperature=0.3, mode="hardmax"):
         q_values = self.q_network.predict(state_img[np.newaxis, ...], extra_features[np.newaxis, ...])[0]
 
         # Check if the Q-values are stagnant
@@ -436,12 +434,9 @@ class DQNAgent:
         if self.learn_step_counter % self.target_update_freq == 0:
             self.update_target_network()
 
-    def update_epsilon(self, rate=1.0):
-        # if any(reward < 0 for reward, _, _ in self.rewards_buffer):
-        #     self.epsilon = 0.20
-        #     return
-
-        self.step_count += 1
+    def update_epsilon(self):
+        # if self.epsilon <= 0.1:
+        #     self.epsilon = 0.25
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
 
     def save(self, filepath):

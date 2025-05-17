@@ -66,15 +66,70 @@ class World():
     #
     #     return player, health_bar
 
+    # def process_data(self, data):
+    #     # player = None
+    #     # health_bar = None
+    #     global player, health_bar
+    #
+    #     # Store the map grid in the world instance
+    #     self.level_length = len(data[0])
+    #     self.set_world_data(data)
+    #
+    #     #iterate through each value in level data file
+    #     for y, row in enumerate(data):
+    #         for x, tile in enumerate(row):
+    #             if tile >= 0:
+    #                 img = img_list[tile]
+    #                 img_rect = img.get_rect()
+    #                 img_rect.x = x * TILE_SIZE
+    #                 img_rect.y = y * TILE_SIZE
+    #                 tile_data = (img, img_rect)
+    #                 if tile >= 0 and tile <= 8:
+    #                     self.obstacle_list.append(tile_data)
+    #                 elif tile >= 9 and tile <= 10:
+    #                     water = Water(img, x * TILE_SIZE, y * TILE_SIZE)
+    #                     water_group.add(water)
+    #                 elif tile == 15:  # coin box
+    #                     item_box = ItemBox('Coin', x * TILE_SIZE, y * TILE_SIZE, player)
+    #                     item_box_group.add(item_box)
+    #                 elif tile >= 11 and tile <= 14:
+    #                     decoration = Decoration(img, x * TILE_SIZE, y * TILE_SIZE)
+    #                     decoration_group.add(decoration)
+    #                 elif tile == 15:#create player
+    #                     player = Soldier('player', x * TILE_SIZE, y * TILE_SIZE, 100, 1.5, 5, 50, 10)
+    #                     health_bar = HealthBar(10, 10, player.health, player.health)
+    #                 elif tile == 16:#create enemies
+    #                     enemy = Soldier('enemy', x * TILE_SIZE, y * TILE_SIZE, 50,1.125, 2, 200, 0)
+    #                     enemy_group.add(enemy)
+    #                 elif tile == 17:#create ammo box
+    #                     item_box = ItemBox('Ammo', x * TILE_SIZE, y * TILE_SIZE, player)
+    #                     item_box_group.add(item_box)
+    #                 elif tile == 18:#create grenade box
+    #                     item_box = ItemBox('Grenade', x * TILE_SIZE, y * TILE_SIZE, player)
+    #                     item_box_group.add(item_box)
+    #                 elif tile == 19:#create health box
+    #                     item_box = ItemBox('Health', x * TILE_SIZE, y * TILE_SIZE, player)
+    #                     item_box_group.add(item_box)
+    #                 elif tile == 20:#create exit
+    #                     exit = Exit(img, x * TILE_SIZE, y * TILE_SIZE)
+    #                     exit_group.add(exit)
+    #     return player, health_bar
+
     def process_data(self, data):
-        global player
-        player = None
-        self.level_length = len(data[0])
+        global player, health_bar
 
         # Store the map grid in the world instance
+        self.level_length = len(data[0])
         self.set_world_data(data)
 
-        #iterate through each value in level data file
+        # First pass - create the player first
+        for y, row in enumerate(data):
+            for x, tile in enumerate(row):
+                if tile == 15:  # Create player
+                    player = Soldier('player', x * TILE_SIZE, y * TILE_SIZE, 100, 1.5, 5, 50, 10)
+                    health_bar = HealthBar(10, 10, player.health, player.health)
+
+        # Second pass - create everything else
         for y, row in enumerate(data):
             for x, tile in enumerate(row):
                 if tile >= 0:
@@ -83,32 +138,34 @@ class World():
                     img_rect.x = x * TILE_SIZE
                     img_rect.y = y * TILE_SIZE
                     tile_data = (img, img_rect)
+
                     if tile >= 0 and tile <= 8:
                         self.obstacle_list.append(tile_data)
                     elif tile >= 9 and tile <= 10:
                         water = Water(img, x * TILE_SIZE, y * TILE_SIZE)
                         water_group.add(water)
-                    elif tile >= 11 and tile <= 14:
+                    elif tile == 11:  # Create ammo box
+                        item_box = ItemBox('Coin', x * TILE_SIZE, y * TILE_SIZE, player)
+                        item_box_group.add(item_box)
+                    elif tile >= 12 and tile <= 14:
                         decoration = Decoration(img, x * TILE_SIZE, y * TILE_SIZE)
                         decoration_group.add(decoration)
-                    elif tile == 15:#create player
-                        player = Soldier('player', x * TILE_SIZE, y * TILE_SIZE, 100, 1.5, 5, 50, 10)
-                        health_bar = HealthBar(10, 10, player.health, player.health)
-                    elif tile == 16:#create enemies
-                        enemy = Soldier('enemy', x * TILE_SIZE, y * TILE_SIZE, 50,1.125, 2, 200, 0)
+                    elif tile == 16:  # Create enemies
+                        enemy = Soldier('enemy', x * TILE_SIZE, y * TILE_SIZE, 50, 1.125, 2, 200, 0)
                         enemy_group.add(enemy)
-                    elif tile == 17:#create ammo box
+                    elif tile == 17:  # Create ammo box
                         item_box = ItemBox('Ammo', x * TILE_SIZE, y * TILE_SIZE, player)
                         item_box_group.add(item_box)
-                    elif tile == 18:#create grenade box
+                    elif tile == 18:  # Create grenade box
                         item_box = ItemBox('Grenade', x * TILE_SIZE, y * TILE_SIZE, player)
                         item_box_group.add(item_box)
-                    elif tile == 19:#create health box
+                    elif tile == 19:  # Create health box
                         item_box = ItemBox('Health', x * TILE_SIZE, y * TILE_SIZE, player)
                         item_box_group.add(item_box)
-                    elif tile == 20:#create exit
+                    elif tile == 20:  # Create exit
                         exit = Exit(img, x * TILE_SIZE, y * TILE_SIZE)
                         exit_group.add(exit)
+
         return player, health_bar
 
     def draw(self):
