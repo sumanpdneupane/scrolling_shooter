@@ -1,45 +1,41 @@
-###
+# 2D Scrolling Shooter Game
 ```
-Source: https://www.youtube.com/watch?v=DHgj5jhMJKg&list=PLjcN1EyupaQm20hlUE11y9y8EY2aXLpnv&index=1
+This project is to develop an AI agent that is able to survive and perform well in 
+the 2D scrolling shooter game. The enemies are constantly roaming, and the agent should 
+shoot, avoid bullets, avoid obstacles and decide in real time. The agent should learn 
+perfectly from your own gaming experience, without providing specific instructions or 
+hard -coded rules.
 ```
 
+## Folder structure
 ```
 shooter_game/
-│── main.py                 # Main game loop
-│── settings.py             # Game constants and settings
-│── world/                  # World-related classes
-│   ├── __init__.py
-│   ├── world.py            # World class
-│   └── tile.py             # Tile-related classes
-│── entities/               # Game entities
-│   ├── __init__.py
-│   ├── player.py           # Player class
-│   ├── enemy.py            # Enemy class
-│   ├── projectile.py       # Bullets/Grenades
-│   └── items.py            # Item boxes
-│── ui/                     # User interface
-│   ├── __init__.py
-│   ├── buttons.py          # Button class
-│   ├── healthbar.py        # Health bar
-│   └── screenfade.py       # Screen transitions
-│── assets/                 # Game assets
-│   ├── images/
-│   ├── audio/
-│   └── level_data/         # Level CSV files
+│── requirements.txt                    # pip installation dependencies
+│── main.py                             # Main game loop
+└── src                                 # Main game loop
+    │── settings.py                     # Game constants and settings
+    │── ai_agent/
+    │   ├── agent.py                    # AI agent
+    │   ├── agent_state_and_Action.py   # AI state and actions
+    │   └── reward.py                   # Rewards for AI
+    │── environment/
+    │   ├── world.py                    # World class
+    │   ├──tile.py                      # Tile-related classes
+    │   ├── entities.py                 # Game entities
+    │   ├── soldier.py                  # Player class
+    │   └──equipments.py                # Bullets/Grenades
+    │── graph/
+    │   └── polt.py                     # Plot graph
+    │── utils/
+    │   └── buttons.py                  # Button class
+    │── data_logs/                      # Logs and Graph related to game
+    │── assets/                         # Game assets
+    │   ├── images/
+    │   ├── audio/
+        └── level_data/                 # Level CSV files
 ```
 
-### For mac 
+### Installation
 ```
-pip install py2app
-
-Update setup.py
-
-rm -rf build dist
-python setup.py py2app
-```
-
-### For Windows
-```
-pip install pyinstaller
-pyinstaller --onefile --windowed main.py
+pip install -r requirements.txt
 ```
