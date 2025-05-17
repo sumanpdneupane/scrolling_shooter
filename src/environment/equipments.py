@@ -30,7 +30,7 @@ class Bullet(pygame.sprite.Sprite):
 		for enemy in enemy_group:
 			if pygame.sprite.spritecollide(enemy, bullet_group, False):
 				if enemy.alive:
-					enemy.health -= 25
+					enemy.health -= 50
 					self.kill()
 
 class Grenade(pygame.sprite.Sprite):
@@ -70,9 +70,6 @@ class Grenade(pygame.sprite.Sprite):
 				elif self.vel_y >= 0:
 					self.vel_y = 0
 					dy = tile[1].top - self.rect.bottom
-
-
-
 
 		#update grenade position
 		self.rect.x += dx + get_screen_scroll()

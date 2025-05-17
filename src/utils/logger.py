@@ -1,5 +1,4 @@
 import os
-
 from src.settings import *
 
 # ----------------------------- LOGGER ----------------------------- #

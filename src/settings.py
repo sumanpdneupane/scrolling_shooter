@@ -2,23 +2,23 @@ import pygame
 import csv
 from src.utils import button
 
-# from pygame import mixer
-#
-# mixer.init()
-# pygame.init()
 
+DEBUG = False
+DEBUG_SHOW_COLLISION_BOX = False
+DEBUG_ENABLE_SOUND = False
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = int(SCREEN_WIDTH * 0.8)
+EPSILION = 0.5
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Shooter')
 
 #set framerate
 clock = pygame.time.Clock()
-FPS = 60
+FPS = 40
 
 #define game variables
-GRAVITY = 0.75
+GRAVITY = 0.65
 SCROLL_THRESH = 200
 ROWS = 16
 COLS = 150
@@ -48,14 +48,14 @@ TRAINING_LOG_PATH = "src/data_logs/training_log.csv"
 
 #load music and sounds
 pygame.mixer.music.load('src/assets/audio/music2.mp3')
-pygame.mixer.music.set_volume(0.00)
+pygame.mixer.music.set_volume(0.05 if DEBUG_ENABLE_SOUND else 0.0)
 pygame.mixer.music.play(-1, 0.0, 5000)
 jump_fx = pygame.mixer.Sound('src/assets/audio/jump.wav')
-jump_fx.set_volume(0.00)
+jump_fx.set_volume(0.03 if DEBUG_ENABLE_SOUND else 0.0)
 shot_fx = pygame.mixer.Sound('src/assets/audio/shot.wav')
-shot_fx.set_volume(0.00)
+shot_fx.set_volume(0.04 if DEBUG_ENABLE_SOUND else 0.0)
 grenade_fx = pygame.mixer.Sound('src/assets/audio/grenade.wav')
-grenade_fx.set_volume(0.00)
+grenade_fx.set_volume(0.07 if DEBUG_ENABLE_SOUND else 0.0)
 
 
 #load images
@@ -64,10 +64,12 @@ start_img = pygame.image.load('src/assets/images/start_btn.png').convert_alpha()
 exit_img = pygame.image.load('src/assets/images/exit_btn.png').convert_alpha()
 restart_img = pygame.image.load('src/assets/images/restart_btn.png').convert_alpha()
 #background
-pine1_img = pygame.image.load('src/assets/images/Background/pine1.png').convert_alpha()
-pine2_img = pygame.image.load('src/assets/images/Background/pine2.png').convert_alpha()
-mountain_img = pygame.image.load('src/assets/images/Background/mountain.png').convert_alpha()
-sky_img = pygame.image.load('src/assets/images/Background/sky_cloud.png').convert_alpha()
+scale = 2
+sky_img = pygame.image.load('src/assets/images/Background/sky_cloud_1.png').convert_alpha()
+sky_img = pygame.transform.scale(sky_img, (int(sky_img.get_width() * scale), int(sky_img.get_height() * 1.5)))
+mountain_img = pygame.image.load('src/assets/images/Background/background_all.png').convert_alpha()
+mountain_img = pygame.transform.scale(mountain_img, (int(mountain_img.get_width() * scale), int(mountain_img.get_height() * 1.5)))
+
 #store tiles in a list
 img_list = []
 for x in range(TILE_TYPES):
@@ -76,17 +78,39 @@ for x in range(TILE_TYPES):
 	img_list.append(img)
 #bullet
 bullet_img = pygame.image.load('src/assets/images/icons/bullet.png').convert_alpha()
+bullet_img = pygame.transform.scale(bullet_img, (int(bullet_img.get_width() * 0.75), int(bullet_img.get_height() * 0.75)))
+
 #grenade
 grenade_img = pygame.image.load('src/assets/images/icons/grenade.png').convert_alpha()
 #pick up boxes
 health_box_img = pygame.image.load('src/assets/images/icons/health_box.png').convert_alpha()
+health_box_img = pygame.transform.scale(health_box_img, (int(health_box_img.get_width() * scale), int(health_box_img.get_height() * scale)))
 ammo_box_img = pygame.image.load('src/assets/images/icons/ammo_box.png').convert_alpha()
+ammo_box_img = pygame.transform.scale(ammo_box_img, (int(ammo_box_img.get_width() * 1.5), int(ammo_box_img.get_height() * 1.5)))
 grenade_box_img = pygame.image.load('src/assets/images/icons/grenade_box.png').convert_alpha()
+grenade_box_img = pygame.transform.scale(grenade_box_img, (int(grenade_box_img.get_width() * 1.5), int(grenade_box_img.get_height() * 1.5)))
+coin_box_img = pygame.image.load(f'src/assets/images/Tile/11.png')
+coin_box_img = pygame.transform.scale(coin_box_img, (TILE_SIZE, TILE_SIZE))
+
+
 item_boxes = {
 	'Health'	: health_box_img,
 	'Ammo'		: ammo_box_img,
-	'Grenade'	: grenade_box_img
+	'Grenade'	: grenade_box_img,
+	'Coin'	    : coin_box_img
 }
+
+def clip_image(img, size_x, size_y):
+	# Clip 20% from left, right, and top — not bottom
+	width, height = img.get_width(), img.get_height()
+	clip_x = int(width * size_x)
+	clip_y = int(height * size_y)
+	new_width = width - 2 * clip_x
+	new_height = height - clip_y  # don't remove from bottom
+
+	# Crop the image
+	img = img.subsurface((clip_x, clip_y, new_width, new_height)).copy()
+	return img
 
 
 #define colours
@@ -96,9 +120,11 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 PINK = (235, 65, 54)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
 
 #define font
-font = pygame.font.SysFont('Futura', 30)
+font = pygame.font.SysFont('Futura', 18)
 
 #create sprite groups
 enemy_group = pygame.sprite.Group()
@@ -123,12 +149,13 @@ def draw_text(text, font, text_col, x, y):
 
 def draw_bg():
 	screen.fill(BG)
-	width = sky_img.get_width()
+	# width = sky_img.get_width()
+	width = mountain_img.get_width()
 	for x in range(5):
 		screen.blit(sky_img, ((x * width) - bg_scroll * 0.5, 0))
-		screen.blit(mountain_img, ((x * width) - bg_scroll * 0.6, SCREEN_HEIGHT - mountain_img.get_height() - 300))
-		screen.blit(pine1_img, ((x * width) - bg_scroll * 0.7, SCREEN_HEIGHT - pine1_img.get_height() - 150))
-		screen.blit(pine2_img, ((x * width) - bg_scroll * 0.8, SCREEN_HEIGHT - pine2_img.get_height()))
+		screen.blit(mountain_img, ((x * width) - bg_scroll * 0.6, SCREEN_HEIGHT - mountain_img.get_height()))
+		# screen.blit(pine1_img, ((x * width) - bg_scroll * 0.7, SCREEN_HEIGHT - pine1_img.get_height() - 150))
+		# screen.blit(pine2_img, ((x * width) - bg_scroll * 0.8, SCREEN_HEIGHT - pine2_img.get_height()))
 
 
 #function to reset level
@@ -143,7 +170,7 @@ def reset_level():
 	exit_group.empty()
 
 	#create empty tile list
-	return get_world_data()
+	return get_world_data(level)
 
 _screen_scroll = 0
 
@@ -155,7 +182,8 @@ def set_screen_scroll(screen_scroll):
     global _screen_scroll
     _screen_scroll = screen_scroll
 
-def get_world_data():
+def get_world_data(level):
+	level=1
 	# create empty tile list
 	world_data = []
 	for row in range(ROWS):

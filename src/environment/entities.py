@@ -29,8 +29,14 @@ class ItemBox(pygame.sprite.Sprite):
                     player.health = player.max_health
             elif self.item_type == 'Ammo':
                 player.ammo += 15
+                if player.ammo > player.max_ammo:
+                    player.ammo = player.max_ammo
             elif self.item_type == 'Grenade':
                 player.grenades += 3
+                if player.grenades > player.max_grenades:
+                    player.grenades = player.max_grenades
+            elif self.item_type == 'Coin':
+                player.coin += 5
             # delete the item box
             self.kill()
 
@@ -89,9 +95,21 @@ class HealthBar():
         self.health = health
         #calculate health ratio
         ratio = self.health / self.max_health
-        pygame.draw.rect(screen, BLACK, (self.x - 2, self.y - 2, 154, 24))
-        pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
-        pygame.draw.rect(screen, GREEN, (self.x, self.y, 150 * ratio, 20))
+
+        # Reduced height parameters
+        border_height = 12  # Original: 24
+        inner_height = 10  # Original: 20
+
+        # Draw border (now 14px tall instead of 24)
+        pygame.draw.rect(screen, WHITE, (self.x - 1, self.y - 1, 168, border_height))
+        # Draw background (now 10px tall instead of 20)
+        pygame.draw.rect(screen, RED, (self.x, self.y, 166, inner_height))
+        # Draw health (now 10px tall instead of 20)
+        pygame.draw.rect(screen, GREEN, (self.x, self.y, 166 * ratio, inner_height))
+
+        # pygame.draw.rect(screen, BLACK, (self.x - 2, self.y - 2, 154, 20))
+        # pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
+        # pygame.draw.rect(screen, GREEN, (self.x, self.y, 150 * ratio, 20))
 
 
 
@@ -103,20 +121,22 @@ class ScreenFade():
         self.fade_counter = 0
 
     def fade(self):
-        fade_complete = False
-        self.fade_counter += self.speed
-        if self.direction == 1:#whole screen fade
-            pygame.draw.rect(screen, self.colour, (0 - self.fade_counter, 0, SCREEN_WIDTH // 2, SCREEN_HEIGHT))
-            pygame.draw.rect(screen, self.colour, (SCREEN_WIDTH // 2 + self.fade_counter, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
-            pygame.draw.rect(screen, self.colour, (0, 0 - self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
-            pygame.draw.rect(screen, self.colour, (0, SCREEN_HEIGHT // 2 +self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT))
-        if self.direction == 2:#vertical screen fade down
-            pygame.draw.rect(screen, self.colour, (0, 0, SCREEN_WIDTH, 0 + self.fade_counter))
-        if self.fade_counter >= SCREEN_WIDTH:
-            fade_complete = True
+        return True
 
-
-        return fade_complete
+        # fade_complete = False
+        # self.fade_counter += self.speed
+        # if self.direction == 1:#whole screen fade
+        #     pygame.draw.rect(screen, self.colour, (0 - self.fade_counter, 0, SCREEN_WIDTH // 2, SCREEN_HEIGHT))
+        #     pygame.draw.rect(screen, self.colour, (SCREEN_WIDTH // 2 + self.fade_counter, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+        #     pygame.draw.rect(screen, self.colour, (0, 0 - self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
+        #     pygame.draw.rect(screen, self.colour, (0, SCREEN_HEIGHT // 2 +self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT))
+        # if self.direction == 2:#vertical screen fade down
+        #     pygame.draw.rect(screen, self.colour, (0, 0, SCREEN_WIDTH, 0 + self.fade_counter))
+        # if self.fade_counter >= SCREEN_WIDTH:
+        #     fade_complete = True
+        #
+        #
+        # return fade_complete
 
 
 
